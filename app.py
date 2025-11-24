@@ -35,6 +35,7 @@ if OPENAI_API_KEY and OpenAI is not None:
     client = OpenAI(api_key=OPENAI_API_KEY)
 
 # ============== Load data (products.json + combos.json) ==============
+# ============== Load data (products.json + combos.json) ==============
 BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
@@ -43,65 +44,207 @@ with open(os.path.join(DATA_DIR, "products.json"), "r", encoding="utf-8") as f:
 with open(os.path.join(DATA_DIR, "combos.json"), "r", encoding="utf-8") as f:
     COMBOS_DATA = json.load(f)
 
-PRODUCTS = PRODUCTS_DATA.get("products", [])
-COMBOS   = COMBOS_DATA.get("combos", [])
+# Chấp nhận format {"products":[...]} hoặc list thẳng
+PRODUCTS = PRODUCTS_DATA.get("products", PRODUCTS_DATA)
+COMBOS   = COMBOS_DATA.get("combos", COMBOS_DATA)
 
-PRODUCT_MAP = {p.get("code"): p for p in PRODUCTS if p.get("code")}
+# ---------- Helper chuẩn hóa & health tags ----------
 
-# ============== Mapping vấn đề sức khỏe → combo / sản phẩm (anh có thể bổ sung dần) ==============
-# Gợi ý: anh sửa / thêm cho đúng với chiến lược công ty.
+def normalize_for_match(s: str) -> str:
+    """Lower + bỏ dấu + bỏ ký tự lạ để so khớp alias/keyword."""
+    import unicodedata
+    if not s:
+        return ""
+    s = str(s).lower().strip()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = re.sub(r"[^a-z0-9\s]", " ", s)
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
 
-# Keyword → id combo (trong combos.json)
-HEALTH_KEYWORDS_COMBO = {
-    "tiểu đường": "combo_tieu_duong",
-    "đái tháo đường": "combo_tieu_duong",
-    "đường huyết": "combo_tieu_duong",
+# Map keyword → health_tag (không phụ thuộc dữ liệu, anh có thể bổ sung dần)
+_HEALTH_KEYWORD_TO_TAG_RAW = {
+    "tiểu đường": "tieu_duong",
+    "dai thao duong": "tieu_duong",
+    "đái tháo đường": "tieu_duong",
+    "duong huyet": "tieu_duong",
+    "đường huyết": "tieu_duong",
 
-    "cơ xương khớp": "combo_co_xuong_khop",
-    "đau khớp": "combo_co_xuong_khop",
-    "gout": "combo_co_xuong_khop",
+    "da day": "da_day",
+    "dạ dày": "da_day",
+    "bao tu": "da_day",
+    "bao tử": "da_day",
+    "trao nguoc": "da_day",
+    "trào ngược": "da_day",
+    "o chua": "da_day",
+    "ợ chua": "da_day",
 
-    "huyết áp": "combo_huyet_ap_tim_mach",
-    "tim mạch": "combo_huyet_ap_tim_mach",
+    "tieu hoa": "tieu_hoa",
+    "tiêu hóa": "tieu_hoa",
+    "tieu hoá": "tieu_hoa",
+    "tao bon": "tieu_hoa",
+    "táo bón": "tieu_hoa",
 
-    "gan": "combo_cai_thien_chuc_nang_gan",
-    "men gan": "combo_cai_thien_chuc_nang_gan",
-    "gan nhiễm mỡ": "combo_cai_thien_chuc_nang_gan",
+    "gan": "gan",
+    "men gan": "gan",
+    "gan nhiem mo": "gan",
+    "gan nhiễm mỡ": "gan",
 
-    "tiêu hóa": "combo_cai_thien_he_tieu_hoa",
-    "rối loạn tiêu hóa": "combo_cai_thien_he_tieu_hoa",
-    "táo bón": "combo_cai_thien_he_tieu_hoa",
+    "xuong khop": "xuong_khop",
+    "xương khớp": "xuong_khop",
+    "dau khop": "xuong_khop",
+    "đau khớp": "xuong_khop",
+    "gout": "xuong_khop",
 
-    "thừa cân": "combo_thua_can_beo_phi",
-    "béo phì": "combo_thua_can_beo_phi",
+    "huyet ap": "tim_mach",
+    "huyết áp": "tim_mach",
+    "tim mach": "tim_mach",
+    "tim mạch": "tim_mach",
+
+    "thai doc": "thai_doc",
+    "thải độc": "thai_doc",
+    "detox": "thai_doc",
+
+    "ung thu": "ung_thu",
+    "ung thư": "ung_thu",
 }
 
-# Keyword → danh sách mã sản phẩm (nếu anh muốn trả theo sản phẩm, không dùng combo)
-HEALTH_KEYWORDS_PRODUCTS = {
-    # Ví dụ: tiểu đường – một vài sản phẩm chính
-    "tiểu đường": ["070728", "070729", "07124"],
-    "đái tháo đường": ["070728", "070729", "07124"],
-    "đường huyết": ["070728", "070729", "07124"],
-
-    # Dạ dày / tiêu hóa
-    "dạ dày": [],
-    "trào ngược": [],
-    "ợ chua": [],
-
-    # Gan
-    "gan": [],
-    "men gan": [],
-
-    # Xương khớp
-    "đau khớp": [],
-    "gout": [],
-    "thoái hóa": [],
-    # ...
-    # Anh có thể tự bổ sung thêm / chỉnh danh sách mã sản phẩm cho chuẩn.
+# Chuẩn hóa keyword map
+HEALTH_KEYWORD_TO_TAG = {
+    normalize_for_match(k): v for k, v in _HEALTH_KEYWORD_TO_TAG_RAW.items()
 }
 
-# Build map combo_id → combo
-COMBO_ID_MAP = {c.get("id"): c for c in COMBOS if c.get("id")}
+def extract_health_tags_from_text(text: str):
+    nt = normalize_for_match(text)
+    tags = set()
+    for kw_norm, tag in HEALTH_KEYWORD_TO_TAG.items():
+        if kw_norm and kw_norm in nt:
+            tags.add(tag)
+    return tags
+
+def build_product_aliases(p: dict):
+    """Sinh thêm alias từ name + code + aliases gốc."""
+    aliases = set()
+    name = p.get("name", "")
+    code = str(p.get("code", "")).lstrip("#").strip()
+    if code:
+        p["code"] = code
+
+    if name:
+        aliases.add(name)
+        aliases.add(name.lower())
+
+        # tách theo ngoặc, dấu /, -, …
+        for part in re.findall(r"[\w\u00C0-\u017F\-\/]+", name):
+            aliases.add(part)
+
+    for a in p.get("aliases", []):
+        if a:
+            aliases.add(a)
+
+    if code:
+        aliases.add(code)
+
+    # chuẩn hóa khoảng trắng
+    aliases_clean = []
+    for a in aliases:
+        a2 = re.sub(r"\s+", " ", str(a)).strip()
+        if a2:
+            aliases_clean.append(a2)
+
+    p["aliases"] = aliases_clean
+
+def build_combo_aliases(c: dict):
+    aliases = set()
+    name = c.get("name", "")
+    if name:
+        aliases.add(name)
+        aliases.add(name.lower())
+        for part in re.findall(r"[\w\u00C0-\u017F\-\/]+", name):
+            aliases.add(part)
+    for a in c.get("aliases", []):
+        if a:
+            aliases.add(a)
+    aliases_clean = []
+    for a in aliases:
+        a2 = re.sub(r"\s+", " ", str(a)).strip()
+        if a2:
+            aliases_clean.append(a2)
+    c["aliases"] = aliases_clean
+
+# ---------- Build PRODUCTS + alias index + health_tags ----------
+
+PRODUCT_MAP = {}
+PRODUCT_ALIAS_INDEX = {}   # alias_norm → set(code)
+
+for p in PRODUCTS:
+    build_product_aliases(p)
+    code = p.get("code")
+    if not code:
+        continue
+
+    # Gắn health_tags (kết hợp tag có sẵn trong JSON + detect từ text)
+    current_tags = set(p.get("health_tags", []))
+    text_for_tags = " ".join([
+        p.get("name", ""),
+        p.get("benefits_text", "") or p.get("benefits", "") or "",
+        p.get("ingredients_text", "") or p.get("ingredients", "") or "",
+        p.get("usage_text", "") or p.get("usage", "") or "",
+    ])
+    auto_tags = extract_health_tags_from_text(text_for_tags)
+    all_tags = sorted(current_tags.union(auto_tags))
+    if all_tags:
+        p["health_tags"] = all_tags
+
+    PRODUCT_MAP[code] = p
+
+    for a in p["aliases"]:
+        na = normalize_for_match(a)
+        if not na:
+            continue
+        PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(code)
+
+# ---------- Build COMBOS + alias index + health_tags ----------
+
+COMBO_ID_MAP = {}
+COMBO_ALIAS_INDEX = {}   # alias_norm → [combo]
+
+for c in COMBOS:
+    build_combo_aliases(c)
+    cid = c.get("id") or normalize_for_match(c.get("name", "") or "")
+    c["id"] = cid
+
+    # health_tags combo = tag từ JSON + tag từ tên/description + tag của từng product trong combo
+    combo_tags = set(c.get("health_tags", []))
+    text_for_tags = " ".join([
+        c.get("name", ""),
+        c.get("header_text", ""),
+        c.get("duration_text", ""),
+    ])
+    combo_tags |= extract_health_tags_from_text(text_for_tags)
+
+    for item in c.get("products", []):
+        code = str(item.get("product_code", "")).lstrip("#").strip()
+        item["product_code"] = code
+        p = PRODUCT_MAP.get(code)
+        if p:
+            # đẩy name/url/price từ product sang nếu thiếu
+            item.setdefault("name", p.get("name", ""))
+            item.setdefault("price_text", p.get("price_text", ""))
+            item.setdefault("product_url", p.get("product_url", ""))
+            for t in p.get("health_tags", []):
+                combo_tags.add(t)
+
+    if combo_tags:
+        c["health_tags"] = sorted(combo_tags)
+
+    COMBO_ID_MAP[cid] = c
+
+    for a in c["aliases"]:
+        na = normalize_for_match(a)
+        if not na:
+            continue
+        COMBO_ALIAS_INDEX.setdefault(na, []).append(c)
 
 # ============== Telegram Keyboard ==============
 MAIN_KEYBOARD = {
@@ -155,55 +298,110 @@ def extract_code(text: str):
     codes = re.findall(r"\b0\d{4,5}\b", text)
     return codes[0] if codes else None
 
-def find_best_combo(text: str):
-    text = text.lower()
-    best_combo = None
-    score_best = 0
-    for combo in COMBOS:
-        aliases = combo.get("aliases", [])
-        score = sum(1 for kw in aliases if kw.lower() in text)
-        if score > score_best:
-            score_best = score
-            best_combo = combo
-    return best_combo
-
-def find_combo_by_health_keyword(text: str):
-    t = text.lower()
-    # Ưu tiên map keyword → combo_id
-    for kw, combo_id in HEALTH_KEYWORDS_COMBO.items():
-        if kw in t:
-            combo = COMBO_ID_MAP.get(combo_id)
-            if combo:
-                return combo
-    # Nếu không match map, fallback theo aliases trong combos.json
-    return find_best_combo(text)
-
-def find_products_by_health(text: str):
-    t = text.lower()
-    codes = set()
-    for kw, code_list in HEALTH_KEYWORDS_PRODUCTS.items():
-        if kw in t:
-            for c in code_list:
-                codes.add(c)
-    # Convert sang list sản phẩm
+def find_best_products(text: str, limit: int = 5):
+    """
+    Tìm sản phẩm theo alias (name, mã, alias mở rộng).
+    """
+    t = normalize_for_match(text)
     results = []
-    for c in codes:
-        p = PRODUCT_MAP.get(c)
-        if p:
-            results.append(p)
-    # Nếu HEALTH_KEYWORDS_PRODUCTS chưa khai đủ → fallback bằng alias
+    seen = set()
+
+    # match alias_norm nằm trong text_norm
+    for alias_norm, codes in PRODUCT_ALIAS_INDEX.items():
+        if alias_norm and alias_norm in t:
+            for code in codes:
+                if code not in seen and code in PRODUCT_MAP:
+                    seen.add(code)
+                    results.append(PRODUCT_MAP[code])
+                    if len(results) >= limit:
+                        return results
+
+    # fallback: match theo từng token
     if not results:
-        results = find_best_products(t)
+        tokens = t.split()
+        for alias_norm, codes in PRODUCT_ALIAS_INDEX.items():
+            if any(tok in alias_norm for tok in tokens):
+                for code in codes:
+                    if code not in seen and code in PRODUCT_MAP:
+                        seen.add(code)
+                        results.append(PRODUCT_MAP[code])
+                        if len(results) >= limit:
+                            return results
+
     return results
 
-def find_best_products(text: str):
-    text = text.lower()
-    matches = []
-    for p in PRODUCTS:
-        aliases = p.get("aliases", [])
-        if any(a.lower() in text for a in aliases):
-            matches.append(p)
-    return matches
+def find_products_by_health(text: str, limit: int = 5):
+    """
+    Tìm sản phẩm theo health_tags (từ JSON) + từ khóa trong câu.
+    """
+    tags_from_text = extract_health_tags_from_text(text)
+    results = []
+    seen = set()
+
+    # Ưu tiên match theo health_tags
+    if tags_from_text:
+        for p in PRODUCTS:
+            p_tags = set(p.get("health_tags", []))
+            if p_tags.intersection(tags_from_text):
+                code = p.get("code")
+                if code and code not in seen:
+                    seen.add(code)
+                    results.append(p)
+                    if len(results) >= limit:
+                        break
+
+    # Nếu chưa có gì → fallback theo alias
+    if not results:
+        results = find_best_products(text, limit=limit)
+
+    return results
+
+def find_best_combo(text: str, limit: int = 3):
+    """
+    Match combo theo alias (tên, alias) – dùng cho fallback.
+    """
+    t = normalize_for_match(text)
+    results = []
+    seen = set()
+
+    for alias_norm, combos in COMBO_ALIAS_INDEX.items():
+        if alias_norm and alias_norm in t:
+            for c in combos:
+                cid = c.get("id")
+                if cid not in seen:
+                    seen.add(cid)
+                    results.append(c)
+                    if len(results) >= limit:
+                        return results
+    return results
+
+def find_combo_by_health_keyword(text: str) -> dict | None:
+    """
+    Tìm combo theo health_tags + alias.
+    """
+    tags_from_text = extract_health_tags_from_text(text)
+    best = None
+    score_best = 0
+
+    # Ưu tiên match theo health_tags
+    for c in COMBOS:
+        c_tags = set(c.get("health_tags", []))
+        score = len(c_tags.intersection(tags_from_text)) if tags_from_text else 0
+        # cộng thêm điểm nếu alias trùng trong text
+        text_norm = normalize_for_match(text)
+        for a in c.get("aliases", []):
+            if normalize_for_match(a) in text_norm:
+                score += 1
+        if score > score_best:
+            score_best = score
+            best = c
+
+    # Nếu chưa ra, fallback thuần theo alias
+    if not best:
+        combos = find_best_combo(text, limit=1)
+        best = combos[0] if combos else None
+
+    return best
 
 # ============== AI: phân loại intent ==============
 INTENT_LABELS = [
@@ -654,3 +852,4 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
