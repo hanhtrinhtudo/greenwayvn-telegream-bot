@@ -32,10 +32,11 @@ if OPENAI_API_KEY and OPENAI_AVAILABLE:
 app = Flask(__name__)
 
 # ============ Đường dẫn data ============
-BASE_DIR = os.path.dirname(__file__)
-PRODUCTS_FILE = os.path.join(BASE_DIR, "products.json")
-COMBOS_FILE   = os.path.join(BASE_DIR, "combos.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 
+PRODUCTS_FILE = os.path.join(DATA_DIR, "products.json")
+COMBOS_FILE   = os.path.join(DATA_DIR, "combos.json")
 
 # ============ Helper chung ============
 def norm_space(s: str) -> str:
@@ -619,3 +620,4 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8000)), debug=True)
+
