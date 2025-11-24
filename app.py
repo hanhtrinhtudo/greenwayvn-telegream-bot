@@ -553,8 +553,8 @@ def polish_answer_with_ai(answer: str) -> str:
 
 # ============== Format trả lời ==============
 def format_combo_answer(combo):
-    name    = combo.get("name", "Combo")
-    header  = combo.get("header_text", "")
+    name     = combo.get("name", "Combo")
+    header   = combo.get("header_text", "")
     duration = combo.get("duration_text", "")
 
     lines = [f"*{name}*"]
@@ -567,20 +567,39 @@ def format_combo_answer(combo):
 
     products_info = []
     for item in combo.get("products", []):
-        code = item.get("product_code")
+        code = (item.get("product_code") or "").strip()
         dose = (item.get("dose_text") or "").strip()
-        p    = PRODUCT_MAP.get(code, {})
-        pname  = item.get("name") or p.get("name") or code
-        price  = item.get("price_text") or p.get("price_text", "")
-        url    = item.get("product_url") or p.get("product_url", "")
+
+        # Lấy thông tin gốc từ PRODUCT_MAP
+        p = PRODUCT_MAP.get(code, {}) if code else {}
+
+        pname       = item.get("name")        or p.get("name")        or code
+        price       = item.get("price_text")  or p.get("price_text", "")
+        url         = item.get("product_url") or p.get("product_url", "")
+        benefits    = item.get("benefits_text")    or p.get("benefits_text")    or p.get("benefits", "")
+        ingredients = item.get("ingredients_text") or p.get("ingredients_text") or p.get("ingredients", "")
+        usage       = item.get("usage_text")       or p.get("usage_text")       or p.get("usage", "")
 
         block = f"• *{pname}* ({code})"
         if price:
             block += f"\n  - Giá tham khảo: {price}"
-        if dose:
+        if benefits:
+            block += f"\n  - Lợi ích chính: {benefits}"
+        if ingredients:
+            block += f"\n  - Thành phần nổi bật: {ingredients}"
+
+        # Phân biệt rõ “cách dùng NSX” và “cách dùng trong combo”
+        if usage and dose and usage.strip() != dose.strip():
+            block += f"\n  - Cách dùng theo NSX: {usage}"
+            block += f"\n  - Cách dùng gợi ý trong combo: {dose}"
+        elif dose:
             block += f"\n  - Cách dùng gợi ý: {dose}"
+        elif usage:
+            block += f"\n  - Cách dùng gợi ý: {usage}"
+
         if url:
             block += f"\n  - 🔗 Link sản phẩm: {url}"
+
         products_info.append(block)
 
     lines.append("\n" + "\n\n".join(products_info))
@@ -591,6 +610,7 @@ def format_combo_answer(combo):
     lines.append("\n👉 TVV có thể điều chỉnh câu chữ cho phù hợp với khách hàng cụ thể.")
     return "\n".join(lines)
 
+
 def format_products_answer(products):
     if not products:
         return (
@@ -600,13 +620,13 @@ def format_products_answer(products):
 
     lines = ["Dưới đây là *một số sản phẩm phù hợp* trong danh mục:\n"]
     for p in products[:5]:
-        name       = p.get("name", "")
-        code       = p.get("code", "")
-        ingredients= p.get("ingredients_text", "")
-        usage      = p.get("usage_text", "")
-        benefits   = p.get("benefits_text", "")
-        url        = p.get("product_url", "")
-        price      = p.get("price_text", "")
+        name        = p.get("name", "")
+        code        = p.get("code", "")
+        ingredients = p.get("ingredients_text", "") or p.get("ingredients", "")
+        usage       = p.get("usage_text", "")       or p.get("usage", "")
+        benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
+        url         = p.get("product_url", "")
+        price       = p.get("price_text", "")       or p.get("price", "")
 
         block = f"*{name}* ({code})"
         if price:
@@ -621,6 +641,7 @@ def format_products_answer(products):
             block += f"\n- 🔗 Link sản phẩm: {url}"
         lines.append(block)
         lines.append("")
+
     lines.append(
         "👉 TVV hãy chọn sản phẩm phù hợp nhất với tình trạng cụ thể của khách, "
         "và luôn nhắc khách đọc kỹ hướng dẫn sử dụng, tham khảo ý kiến bác sĩ khi cần."
@@ -852,4 +873,5 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
 
