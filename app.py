@@ -779,16 +779,63 @@ def webhook():
         return jsonify(ok=True)
 
     chat_id   = message["chat"]["id"]
-    text      = message.get("text", "")
-    from_user = message.get("from", {})
+    text      = message.get("text", "") or ""
+    from_user = message.get("from", {}) or {}
     user_name = (from_user.get("first_name", "") + " " +
                  from_user.get("last_name", "")).strip() or from_user.get("username", "")
+
+    # Nếu là tin nhắn từ nhóm / tài khoản tuyến trên
+    # → xử lý /reply <chat_id> ... hoặc reply vào tin forward
+    if UPLINE_CHAT_ID and str(chat_id) == str(UPLINE_CHAT_ID) and text.strip():
+        target_chat_id = None
+        reply_body = None
+
+        # Cách 1: /reply <chat_id> Nội dung...
+        m = re.match(r"^/reply\s+(-?\d+)\s+(.+)", text.strip(), re.DOTALL | re.IGNORECASE)
+        if m:
+            target_chat_id = int(m.group(1))
+            reply_body = m.group(2).strip()
+
+        else:
+            # Cách 2: reply vào tin "YÊU CẦU HỖ TRỢ TUYẾN TRÊN" mà bot đã gửi trong nhóm
+            reply_msg = message.get("reply_to_message") or {}
+            base_text = reply_msg.get("text") or ""
+            m2 = re.search(r"chat_id:\s*`(-?\d+)`", base_text)
+            if m2:
+                target_chat_id = int(m2.group(1))
+                reply_body = text.strip()
+
+        if target_chat_id and reply_body:
+            tvv_reply = f"*Trả lời từ tuyến trên:* 👇\n\n{reply_body}"
+            tvv_reply = polish_answer_with_ai(tvv_reply)
+            # Gửi cho TVV kèm keyboard
+            send_message(target_chat_id, tvv_reply, reply_markup=MAIN_KEYBOARD)
+
+            # Log lên Google Sheets (intent: upline_reply)
+            log_payload = {
+                "chat_id": target_chat_id,           # chat của TVV
+                "user_name": user_name,              # tên người trả lời (tuyến trên)
+                "text": reply_body,
+                "intent": "upline_reply",
+                "matched_combo_id": "",
+                "matched_combo_name": "",
+                "matched_product_code": "",
+                "matched_product_name": "",
+                "upline_name": user_name,
+                "from_upline_chat_id": chat_id,
+            }
+            log_to_sheet(log_payload)
+
+        # Dù parse được hay không thì cũng kết thúc xử lý ở đây
+        return jsonify(ok=True)
+
+    # Nếu không phải từ UPLINE_CHAT_ID → xử lý như TVV bình thường
 
     if not text:
         send_message(chat_id, "Hiện tại em chỉ hiểu tin nhắn dạng text thôi ạ. 🙏", reply_markup=MAIN_KEYBOARD)
         return jsonify(ok=True)
 
-    # ====== Nếu đang ở chế độ chờ nội dung nhờ tuyến trên ======
+    # ====== Nếu TVV đang ở chế độ chờ mô tả câu hỏi cho tuyến trên ======
     if ESCALATION_PENDING.get(chat_id):
         ESCALATION_PENDING.pop(chat_id, None)
 
@@ -812,6 +859,7 @@ def webhook():
         confirm = polish_answer_with_ai(confirm)
         send_message(chat_id, confirm, reply_markup=MAIN_KEYBOARD)
 
+        # Log intent chi tiết tuyến trên
         log_payload = {
             "chat_id": chat_id,
             "user_name": user_name,
@@ -916,9 +964,100 @@ def webhook():
 
     return jsonify(ok=True)
 
+    # ====== Bình thường: phân loại intent ======
+    intent = classify_intent(text)
+
+    matched_combo_id      = ""
+    matched_combo_name    = ""
+    matched_product_code  = ""
+    matched_product_name  = ""
+
+    # Xử lý intent
+    if intent == "start":
+        reply = answer_start()
+
+    elif intent in ("menu_combo",):
+        reply = answer_menu_combo()
+
+    elif intent in ("menu_product_search",):
+        reply = answer_menu_product_search()
+
+    elif intent in ("menu_buy_payment", "buy_payment"):
+        reply = answer_buy_payment()
+
+    elif intent in ("menu_business_escalation", "business_escalation"):
+        # Đánh dấu: tin nhắn kế tiếp sẽ là nội dung nhờ tuyến trên
+        ESCALATION_PENDING[chat_id] = True
+        reply = answer_business_escalation()
+
+    elif intent in ("menu_channels", "channels"):
+        reply = answer_channels()
+
+    elif intent == "product_by_code":
+        code = extract_code(text)
+        if code and code in PRODUCT_MAP:
+            reply = format_product_by_code(code)
+            matched_product_code = code
+            matched_product_name = PRODUCT_MAP[code].get("name", "")
+        else:
+            reply = "Em chưa tìm được mã sản phẩm này, anh/chị kiểm tra lại giúp em nhé. 🙏"
+
+    elif intent == "combo_health":
+        combo = find_combo_by_health_keyword(text)
+        if combo:
+            reply = format_combo_answer(combo)
+            matched_combo_id   = combo.get("id", "")
+            matched_combo_name = combo.get("name", "")
+        else:
+            # Nếu không tìm được combo, thử trả sản phẩm theo vấn đề sức khỏe
+            products = find_products_by_health(text)
+            reply    = format_products_answer(products)
+            if products:
+                matched_product_code = products[0].get("code", "")
+                matched_product_name = products[0].get("name", "")
+
+    elif intent == "health_products":
+        products = find_products_by_health(text)
+        reply    = format_products_answer(products)
+        if products:
+            matched_product_code = products[0].get("code", "")
+            matched_product_name = products[0].get("name", "")
+
+    elif intent == "product_info":
+        products = find_best_products(text)
+        reply    = format_products_answer(products)
+        if products:
+            matched_product_code = products[0].get("code", "")
+            matched_product_name = products[0].get("name", "")
+
+    else:
+        reply = answer_fallback()
+
+    # Mượt hóa bằng OpenAI (nếu bật)
+    reply = polish_answer_with_ai(reply)
+
+    # Gửi lại cho TVV kèm keyboard
+    send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
+
+    # Log lên Google Sheets
+    log_payload = {
+        "chat_id": chat_id,
+        "user_name": user_name,
+        "text": text,
+        "intent": intent,
+        "matched_combo_id": matched_combo_id,
+        "matched_combo_name": matched_combo_name,
+        "matched_product_code": matched_product_code,
+        "matched_product_name": matched_product_name,
+    }
+    log_to_sheet(log_payload)
+
+    return jsonify(ok=True)
+
 @app.route("/healthz", methods=["GET"])
 def healthz():
     return "ok", 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
