@@ -22,7 +22,13 @@ LINK_WEBSITE          = os.getenv("LINK_WEBSITE", "https://...")
 OPENAI_API_KEY        = os.getenv("OPENAI_API_KEY", "")
 LOG_SHEET_WEBHOOK_URL = os.getenv("LOG_SHEET_WEBHOOK_URL", "")
 
+# Chat id nhóm / leader tuyến trên để forward yêu cầu hỗ trợ
+UPLINE_CHAT_ID        = os.getenv("UPLINE_CHAT_ID", "")  # ví dụ: "-1001234567890"
+
 ENABLE_AI_POLISH      = os.getenv("ENABLE_AI_POLISH", "true").lower() == "true"
+
+# Lưu trạng thái: TVV vừa bấm "Kết nối tuyến trên" và đang chuẩn bị gửi câu hỏi
+ESCALATION_PENDING: dict[int, bool] = {}  # {chat_id: True}
 
 if not TELEGRAM_TOKEN:
     raise RuntimeError("Chưa cấu hình TELEGRAM_TOKEN trong .env")
@@ -34,7 +40,6 @@ client = None
 if OPENAI_API_KEY and OpenAI is not None:
     client = OpenAI(api_key=OPENAI_API_KEY)
 
-# ============== Load data (products.json + combos.json) ==============
 # ============== Load data (products.json + combos.json) ==============
 BASE_DIR = os.path.dirname(__file__)
 DATA_DIR = os.path.join(BASE_DIR, "data")
@@ -174,8 +179,8 @@ def build_combo_aliases(c: dict):
 
 # ---------- Build PRODUCTS + alias index + health_tags ----------
 
-PRODUCT_MAP = {}
-PRODUCT_ALIAS_INDEX = {}   # alias_norm → set(code)
+PRODUCT_MAP: dict[str, dict] = {}
+PRODUCT_ALIAS_INDEX: dict[str, set[str]] = {}   # alias_norm → set(code)
 
 for p in PRODUCTS:
     build_product_aliases(p)
@@ -206,8 +211,8 @@ for p in PRODUCTS:
 
 # ---------- Build COMBOS + alias index + health_tags ----------
 
-COMBO_ID_MAP = {}
-COMBO_ALIAS_INDEX = {}   # alias_norm → [combo]
+COMBO_ID_MAP: dict[str, dict] = {}
+COMBO_ALIAS_INDEX: dict[str, list[dict]] = {}   # alias_norm → [combo]
 
 for c in COMBOS:
     build_combo_aliases(c)
@@ -382,13 +387,13 @@ def find_combo_by_health_keyword(text: str) -> dict | None:
     tags_from_text = extract_health_tags_from_text(text)
     best = None
     score_best = 0
+    text_norm = normalize_for_match(text)
 
     # Ưu tiên match theo health_tags
     for c in COMBOS:
         c_tags = set(c.get("health_tags", []))
         score = len(c_tags.intersection(tags_from_text)) if tags_from_text else 0
         # cộng thêm điểm nếu alias trùng trong text
-        text_norm = normalize_for_match(text)
         for a in c.get("aliases", []):
             if normalize_for_match(a) in text_norm:
                 score += 1
@@ -408,6 +413,7 @@ INTENT_LABELS = [
     "start",
     "buy_payment",
     "business_escalation",
+    "business_escalation_detail",  # dùng cho log khi TVV gửi nội dung nhờ tuyến trên
     "channels",
     "combo_health",
     "product_info",
@@ -440,6 +446,7 @@ def classify_intent_ai(text: str):
                         "- start: greeting or /start\n"
                         "- buy_payment: how to buy/pay/order\n"
                         "- business_escalation: hard business/commission/policy questions\n"
+                        "- business_escalation_detail: follow-up message describing the hard question for upline\n"
                         "- channels: official channels, fanpage, website\n"
                         "- combo_health: which combo for a health problem\n"
                         "- product_info: ask about a product by name or description\n"
@@ -503,10 +510,9 @@ def classify_intent_rules(text: str):
                         "huyết áp", "tim mạch",
                         "gan", "men gan", "gan nhiễm mỡ",
                         "tiêu hóa", "rối loạn tiêu hóa", "táo bón"]):
-        # Mình sẽ dùng combo_health, còn trong handler có thể thêm sản phẩm nếu cần
         return "combo_health"
 
-    # Hỏi cụ thể về sản phẩm (theo tên)
+    # Hỏi cụ thể về sản phẩm (theo tên / info)
     if contains_any(t, ["thành phần", "tác dụng", "lợi ích", "cách dùng", "công dụng", "uống như thế nào"]):
         return "product_info"
 
@@ -610,7 +616,6 @@ def format_combo_answer(combo):
     lines.append("\n👉 TVV có thể điều chỉnh câu chữ cho phù hợp với khách hàng cụ thể.")
     return "\n".join(lines)
 
-
 def format_products_answer(products):
     if not products:
         return (
@@ -653,12 +658,12 @@ def format_product_by_code(code: str):
     if not p:
         return "Em chưa tìm thấy mã sản phẩm này ạ. Anh/chị kiểm tra lại giúp em mã số nhé. 🙏"
 
-    name       = p.get("name", "")
-    ingredients= p.get("ingredients_text", "")
-    usage      = p.get("usage_text", "")
-    benefits   = p.get("benefits_text", "")
-    url        = p.get("product_url", "")
-    price      = p.get("price_text", "")
+    name        = p.get("name", "")
+    ingredients = p.get("ingredients_text", "") or p.get("ingredients", "")
+    usage       = p.get("usage_text", "")       or p.get("usage", "")
+    benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
+    url         = p.get("product_url", "")
+    price       = p.get("price_text", "")       or p.get("price", "")
 
     lines = [f"*{name}* ({code})"]
     if price:
@@ -729,9 +734,12 @@ def answer_buy_payment():
 def answer_business_escalation():
     return (
         "*Kết nối tuyến trên khi gặp câu hỏi khó* ☎️\n\n"
-        f"- 📞 Hotline tuyến trên: *{HOTLINE_TUYEN_TREN}*\n"
-        "- 💬 Gợi ý: TVV chụp màn hình câu hỏi của khách, kèm phương án trả lời dự kiến rồi gửi cho tuyến trên để được góp ý.\n"
-        "- Nếu câu hỏi liên quan đến *chính sách, hoa hồng, pháp lý*, TVV nên chuyển khách sang hotline hoặc leader phụ trách."
+        "Anh/chị hãy gửi tiếp *1 tin nhắn nữa* mô tả rõ:\n"
+        "- Câu hỏi / tình huống cụ thể của khách\n"
+        "- Phương án anh/chị đang phân vân hoặc đã trả lời thử\n"
+        "- Mức độ gấp (vd: cần hỗ trợ trong hôm nay)\n\n"
+        "Ngay sau tin nhắn đó, em sẽ *chuyển nguyên văn* cho tuyến trên để hỗ trợ.\n"
+        f"Nếu thật sự gấp, anh/chị có thể gọi thêm Hotline: *{HOTLINE_TUYEN_TREN}*."
     )
 
 def answer_channels():
@@ -780,6 +788,45 @@ def webhook():
         send_message(chat_id, "Hiện tại em chỉ hiểu tin nhắn dạng text thôi ạ. 🙏", reply_markup=MAIN_KEYBOARD)
         return jsonify(ok=True)
 
+    # ====== Nếu đang ở chế độ chờ nội dung nhờ tuyến trên ======
+    if ESCALATION_PENDING.get(chat_id):
+        ESCALATION_PENDING.pop(chat_id, None)
+
+        # Gửi sang nhóm / leader tuyến trên
+        if UPLINE_CHAT_ID:
+            notify = (
+                "🔔 *YÊU CẦU HỖ TRỢ TUYẾN TRÊN*\n\n"
+                f"- Từ TVV: *{user_name}* (chat_id: `{chat_id}`)\n"
+                f"- Nội dung:\n{text}"
+            )
+            try:
+                send_message(UPLINE_CHAT_ID, notify)
+            except Exception as e:
+                print("Error forward to upline:", e)
+
+        confirm = (
+            "Em đã ghi nhận và *chuyển nội dung này cho tuyến trên* rồi ạ. ✅\n"
+            f"Nếu cần gấp, anh/chị có thể gọi thêm Hotline: *{HOTLINE_TUYEN_TREN}*.\n"
+            "Khi tuyến trên phản hồi, anh/chị nhớ cập nhật lại cho khách nhé."
+        )
+        confirm = polish_answer_with_ai(confirm)
+        send_message(chat_id, confirm, reply_markup=MAIN_KEYBOARD)
+
+        log_payload = {
+            "chat_id": chat_id,
+            "user_name": user_name,
+            "text": text,
+            "intent": "business_escalation_detail",
+            "matched_combo_id": "",
+            "matched_combo_name": "",
+            "matched_product_code": "",
+            "matched_product_name": "",
+        }
+        log_to_sheet(log_payload)
+
+        return jsonify(ok=True)
+
+    # ====== Bình thường: phân loại intent ======
     intent = classify_intent(text)
 
     matched_combo_id      = ""
@@ -801,6 +848,8 @@ def webhook():
         reply = answer_buy_payment()
 
     elif intent in ("menu_business_escalation", "business_escalation"):
+        # Đánh dấu: tin nhắn kế tiếp sẽ là nội dung nhờ tuyến trên
+        ESCALATION_PENDING[chat_id] = True
         reply = answer_business_escalation()
 
     elif intent in ("menu_channels", "channels"):
@@ -873,5 +922,3 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
-
-
