@@ -53,6 +53,26 @@ with open(os.path.join(DATA_DIR, "combos.json"), "r", encoding="utf-8") as f:
 PRODUCTS = PRODUCTS_DATA.get("products", PRODUCTS_DATA)
 COMBOS   = COMBOS_DATA.get("combos", COMBOS_DATA)
 
+HEALTH_TAG_LABELS = {
+    "tieu_duong": "hỗ trợ ổn định đường huyết, tiểu đường",
+    "tieu_hoa": "hỗ trợ tiêu hóa, đường ruột",
+    "gan": "hỗ trợ chức năng gan, thải độc gan",
+    "thai_doc": "thải độc, giải độc cơ thể",
+    "mien_dich": "tăng cường hệ miễn dịch",
+    "tim_mach": "hỗ trợ tim mạch, huyết áp",
+    "xuong_khop": "hỗ trợ xương khớp, giảm đau khớp",
+    "than": "hỗ trợ thận – tiết niệu",
+    "ung_thu": "hỗ trợ bệnh lý/u bướu, ung thư (kết hợp phác đồ)",
+    "giam_mo": "giảm mỡ, kiểm soát cân nặng",
+}
+def build_usecase_from_tags(tags):
+    labels = []
+    for t in tags or []:
+        lbl = HEALTH_TAG_LABELS.get(t)
+        if lbl and lbl not in labels:
+            labels.append(lbl)
+    return "; ".join(labels)
+
 # ---------- Helper chuẩn hóa & health tags ----------
 
 def normalize_for_match(s: str) -> str:
@@ -569,6 +589,11 @@ def format_combo_answer(combo):
     if duration:
         lines.append(f"\n⏱ *Thời gian khuyến nghị:* {duration}")
 
+    # Dùng health_tags của combo để nói nhanh combo hỗ trợ gì
+    combo_usecase = build_usecase_from_tags(combo.get("health_tags", []))
+    if combo_usecase:
+        lines.append(f"\n🎯 *Combo này phù hợp:* {combo_usecase}")
+
     lines.append("\n🧩 *Các sản phẩm trong combo:*")
 
     products_info = []
@@ -585,12 +610,16 @@ def format_combo_answer(combo):
         benefits    = item.get("benefits_text")    or p.get("benefits_text")    or p.get("benefits", "")
         ingredients = item.get("ingredients_text") or p.get("ingredients_text") or p.get("ingredients", "")
         usage       = item.get("usage_text")       or p.get("usage_text")       or p.get("usage", "")
+        tags        = item.get("health_tags")      or p.get("health_tags", [])
+        usecase     = build_usecase_from_tags(tags)
 
         block = f"• *{pname}* ({code})"
         if price:
             block += f"\n  - Giá tham khảo: {price}"
         if benefits:
             block += f"\n  - Lợi ích chính: {benefits}"
+        if usecase:
+            block += f"\n  - Dùng trong các trường hợp: {usecase}"
         if ingredients:
             block += f"\n  - Thành phần nổi bật: {ingredients}"
 
@@ -632,12 +661,16 @@ def format_products_answer(products):
         benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
         url         = p.get("product_url", "")
         price       = p.get("price_text", "")       or p.get("price", "")
+        tags        = p.get("health_tags", [])
+        usecase     = build_usecase_from_tags(tags)
 
         block = f"*{name}* ({code})"
         if price:
             block += f"\n- Giá tham khảo: {price}"
         if benefits:
             block += f"\n- Lợi ích chính: {benefits}"
+        if usecase:
+            block += f"\n- Dùng trong các trường hợp: {usecase}"
         if ingredients:
             block += f"\n- Thành phần nổi bật: {ingredients}"
         if usage:
@@ -664,12 +697,16 @@ def format_product_by_code(code: str):
     benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
     url         = p.get("product_url", "")
     price       = p.get("price_text", "")       or p.get("price", "")
+    tags        = p.get("health_tags", [])
+    usecase     = build_usecase_from_tags(tags)
 
     lines = [f"*{name}* ({code})"]
     if price:
         lines.append(f"- Giá tham khảo: {price}")
     if benefits:
         lines.append(f"- Lợi ích chính: {benefits}")
+    if usecase:
+        lines.append(f"- Dùng trong các trường hợp: {usecase}")
     if ingredients:
         lines.append(f"- Thành phần nổi bật: {ingredients}")
     if usage:
@@ -1060,4 +1097,5 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
 
