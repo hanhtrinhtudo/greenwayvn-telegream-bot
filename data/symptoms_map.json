@@ -1,0 +1,109 @@
+{
+  "đau dạ dày": {
+    "health_tags": [
+      "tieu_hoa"
+    ]
+  },
+  "trào ngược dạ dày": {
+    "health_tags": [
+      "tieu_hoa"
+    ]
+  },
+  "đầy hơi, chướng bụng": {
+    "health_tags": [
+      "tieu_hoa"
+    ]
+  },
+  "táo bón lâu ngày": {
+    "health_tags": [
+      "tieu_hoa",
+      "thai_doc"
+    ]
+  },
+  "gan nhiễm mỡ": {
+    "health_tags": [
+      "gan",
+      "thai_doc"
+    ]
+  },
+  "men gan cao": {
+    "health_tags": [
+      "gan",
+      "thai_doc"
+    ]
+  },
+  "uống nhiều rượu bia": {
+    "health_tags": [
+      "gan",
+      "thai_doc"
+    ]
+  },
+  "cao huyết áp": {
+    "health_tags": [
+      "tim_mach"
+    ]
+  },
+  "mỡ máu cao": {
+    "health_tags": [
+      "tim_mach"
+    ]
+  },
+  "xơ vữa động mạch": {
+    "health_tags": [
+      "tim_mach"
+    ]
+  },
+  "tiểu đường tuýp 2": {
+    "health_tags": [
+      "tieu_duong"
+    ]
+  },
+  "tiền tiểu đường": {
+    "health_tags": [
+      "tieu_duong",
+      "tieu_hoa"
+    ]
+  },
+  "viêm họng, ho nhiều": {
+    "health_tags": [
+      "ho_hap",
+      "mien_dich"
+    ]
+  },
+  "viêm phế quản": {
+    "health_tags": [
+      "ho_hap",
+      "mien_dich"
+    ]
+  },
+  "đau khớp gối": {
+    "health_tags": [
+      "xuong_khop"
+    ]
+  },
+  "thoái hóa khớp": {
+    "health_tags": [
+      "xuong_khop"
+    ]
+  },
+  "mất ngủ, khó ngủ": {
+    "health_tags": [
+      "than_kinh"
+    ]
+  },
+  "stress, căng thẳng kéo dài": {
+    "health_tags": [
+      "than_kinh"
+    ]
+  },
+  "giảm ham muốn": {
+    "health_tags": [
+      "sinh_ly_nam"
+    ]
+  },
+  "rối loạn cương": {
+    "health_tags": [
+      "sinh_ly_nam"
+    ]
+  }
+}

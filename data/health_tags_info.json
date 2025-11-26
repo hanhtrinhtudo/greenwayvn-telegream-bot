@@ -1,0 +1,113 @@
+{
+  "gan": {
+    "label": "Hỗ trợ gan – thải độc",
+    "description": "Nhóm sản phẩm giúp bảo vệ tế bào gan, hỗ trợ thải độc, giảm men gan, cải thiện chức năng gan và tiêu hóa.",
+    "typical_symptoms": [
+      "men gan cao",
+      "gan nhiễm mỡ",
+      "mệt mỏi, nóng trong",
+      "uống nhiều rượu bia"
+    ]
+  },
+  "thai_doc": {
+    "label": "Thải độc toàn thân",
+    "description": "Giúp cơ thể đào thải độc tố, gốc tự do, kim loại nặng, hỗ trợ phòng ngừa nhiều bệnh mạn tính.",
+    "typical_symptoms": [
+      "mệt mỏi kéo dài",
+      "da xấu, nổi mụn",
+      "hay dị ứng, mẩn ngứa"
+    ]
+  },
+  "tieu_hoa": {
+    "label": "Dạ dày – đường ruột",
+    "description": "Hỗ trợ dạ dày, ruột, giảm đầy hơi, khó tiêu, táo bón, cân bằng hệ vi sinh đường ruột.",
+    "typical_symptoms": [
+      "đau dạ dày",
+      "trào ngược",
+      "đầy hơi, chướng bụng",
+      "táo bón, tiêu hóa kém"
+    ]
+  },
+  "mien_dich": {
+    "label": "Miễn dịch – đề kháng",
+    "description": "Tăng sức đề kháng, giảm nguy cơ nhiễm khuẩn, vi rút, hỗ trợ phục hồi sau ốm.",
+    "typical_symptoms": [
+      "hay ốm vặt",
+      "dễ cảm cúm",
+      "sức khỏe yếu, hay mệt"
+    ]
+  },
+  "tim_mach": {
+    "label": "Tim mạch – huyết áp – mạch máu",
+    "description": "Hỗ trợ tim mạch khỏe, tuần hoàn tốt, giảm nguy cơ xơ vữa, tăng đàn hồi thành mạch.",
+    "typical_symptoms": [
+      "cao huyết áp",
+      "mỡ máu cao",
+      "đau tức ngực, hồi hộp",
+      "tê bì tay chân, tuần hoàn kém"
+    ]
+  },
+  "ho_hap": {
+    "label": "Hô hấp – ho – viêm họng",
+    "description": "Hỗ trợ đường hô hấp, giảm ho, loãng đờm, tăng sức đề kháng đường thở.",
+    "typical_symptoms": [
+      "ho khan, ho có đờm",
+      "viêm họng, viêm phế quản",
+      "hen suyễn, khó thở"
+    ]
+  },
+  "tieu_duong": {
+    "label": "Tiểu đường – đường huyết",
+    "description": "Hỗ trợ ổn định đường huyết, giảm đề kháng insulin, hạn chế biến chứng tiểu đường.",
+    "typical_symptoms": [
+      "đường huyết cao",
+      "tiểu nhiều, khát nhiều",
+      "sụt cân, mệt mỏi"
+    ]
+  },
+  "than": {
+    "label": "Thận – tiết niệu – sỏi",
+    "description": "Hỗ trợ chức năng thận, tiết niệu, bàng quang, hỗ trợ bài tiết và đào thải sỏi.",
+    "typical_symptoms": [
+      "đau lưng vùng thận",
+      "tiểu buốt, tiểu rắt",
+      "sỏi thận, sỏi tiết niệu"
+    ]
+  },
+  "xuong_khop": {
+    "label": "Xương khớp – loãng xương",
+    "description": "Hỗ trợ sụn khớp, giảm đau nhức, tăng mật độ xương, hạn chế thoái hóa.",
+    "typical_symptoms": [
+      "đau khớp gối, cột sống",
+      "thoái hóa khớp",
+      "loãng xương, giòn xương"
+    ]
+  },
+  "than_kinh": {
+    "label": "Thần kinh – stress – mất ngủ",
+    "description": "Giúp trấn tĩnh thần kinh, cải thiện giấc ngủ, giảm căng thẳng, lo âu.",
+    "typical_symptoms": [
+      "khó ngủ, mất ngủ",
+      "lo lắng, căng thẳng",
+      "đau đầu do stress"
+    ]
+  },
+  "sinh_ly_nam": {
+    "label": "Sinh lý nam – nội tiết nam",
+    "description": "Hỗ trợ tăng sinh lực, cân bằng nội tiết tố nam, cải thiện chất lượng đời sống vợ chồng.",
+    "typical_symptoms": [
+      "giảm ham muốn",
+      "rối loạn cương",
+      "suy giảm sinh lực"
+    ]
+  },
+  "ung_thu": {
+    "label": "Hỗ trợ ung thư – u bướu",
+    "description": "Hỗ trợ cơ thể trong quá trình điều trị, nâng cao miễn dịch, giảm tác động của gốc tự do.",
+    "typical_symptoms": [
+      "điều trị ung thư",
+      "u bướu lành/ác",
+      "sau hóa trị/xạ trị"
+    ]
+  }
+}
