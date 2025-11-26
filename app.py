@@ -53,6 +53,26 @@ with open(os.path.join(DATA_DIR, "combos.json"), "r", encoding="utf-8") as f:
 PRODUCTS = PRODUCTS_DATA.get("products", PRODUCTS_DATA)
 COMBOS   = COMBOS_DATA.get("combos", COMBOS_DATA)
 
+# Load thêm metadata health_tags + triệu chứng + alias bổ sung (nếu có)
+try:
+    with open(os.path.join(DATA_DIR, "health_tags_info.json"), "r", encoding="utf-8") as f:
+        HEALTH_TAGS_INFO = json.load(f)
+except FileNotFoundError:
+    HEALTH_TAGS_INFO = {}
+
+try:
+    with open(os.path.join(DATA_DIR, "symptoms_map.json"), "r", encoding="utf-8") as f:
+        SYMPTOMS_MAP_RAW = json.load(f)
+except FileNotFoundError:
+    SYMPTOMS_MAP_RAW = {}
+
+try:
+    with open(os.path.join(DATA_DIR, "product_aliases.json"), "r", encoding="utf-8") as f:
+        PRODUCT_ALIASES_DATA = json.load(f)
+        PRODUCT_ALIASES_BY_ALIAS = PRODUCT_ALIASES_DATA.get("by_alias", PRODUCT_ALIASES_DATA)
+except FileNotFoundError:
+    PRODUCT_ALIASES_BY_ALIAS = {}
+
 HEALTH_TAG_LABELS = {
     "tieu_duong": "hỗ trợ ổn định đường huyết, tiểu đường",
     "tieu_hoa": "hỗ trợ tiêu hóa, đường ruột",
@@ -65,6 +85,13 @@ HEALTH_TAG_LABELS = {
     "ung_thu": "hỗ trợ bệnh lý/u bướu, ung thư (kết hợp phác đồ)",
     "giam_mo": "giảm mỡ, kiểm soát cân nặng",
 }
+# Bổ sung/ghi đè nhãn từ file health_tags_info.json (nếu có)
+if "HEALTH_TAGS_INFO" in globals() and HEALTH_TAGS_INFO:
+    for _tag, _info in HEALTH_TAGS_INFO.items():
+        _lbl = (_info.get("label") or "").strip()
+        if _lbl:
+            HEALTH_TAG_LABELS[_tag] = _lbl
+
 def build_usecase_from_tags(tags):
     labels = []
     for t in tags or []:
@@ -139,13 +166,44 @@ HEALTH_KEYWORD_TO_TAG = {
     normalize_for_match(k): v for k, v in _HEALTH_KEYWORD_TO_TAG_RAW.items()
 }
 
+# Chuẩn hóa symptoms_map từ file JSON: key (triệu chứng) → list health_tags
+SYMPTOMS_MAP_NORM = {}
+if "SYMPTOMS_MAP_RAW" in globals() and isinstance(SYMPTOMS_MAP_RAW, dict):
+    for raw_symptom, info in SYMPTOMS_MAP_RAW.items():
+        tags = []
+        if isinstance(info, dict):
+            tags = info.get("health_tags", []) or []
+        elif isinstance(info, list):
+            tags = info
+        key_norm = normalize_for_match(raw_symptom)
+        if key_norm and tags:
+            SYMPTOMS_MAP_NORM[key_norm] = tags
+
 def extract_health_tags_from_text(text: str):
+    """Trích health_tags từ câu mô tả triệu chứng/bệnh lý.
+
+    Ưu tiên:
+    1) Map từ symptoms_map.json (triệu chứng → nhiều health_tags)
+    2) Fallback: map từ keyword tĩnh HEALTH_KEYWORD_TO_TAG
+    """
     nt = normalize_for_match(text)
-    tags = set()
+    tags: set[str] = set()
+
+    # 1) Theo triệu chứng trong file JSON
+    if "SYMPTOMS_MAP_NORM" in globals():
+        for sym_norm, tags_list in SYMPTOMS_MAP_NORM.items():
+            if sym_norm and sym_norm in nt:
+                for t in tags_list:
+                    if t:
+                        tags.add(t)
+
+    # 2) Theo keyword map cứng (bổ sung)
     for kw_norm, tag in HEALTH_KEYWORD_TO_TAG.items():
         if kw_norm and kw_norm in nt:
             tags.add(tag)
+
     return tags
+
 
 def build_product_aliases(p: dict):
     """Sinh thêm alias từ name + code + aliases gốc."""
@@ -228,6 +286,17 @@ for p in PRODUCTS:
         if not na:
             continue
         PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(code)
+
+# Bổ sung alias từ file product_aliases.json (nếu có)
+if "PRODUCT_ALIASES_BY_ALIAS" in globals() and PRODUCT_ALIASES_BY_ALIAS:
+    for alias_norm, codes in PRODUCT_ALIASES_BY_ALIAS.items():
+        na = normalize_for_match(alias_norm)
+        if not na:
+            continue
+        for code in codes:
+            if not code:
+                continue
+            PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(str(code))
 
 # ---------- Build COMBOS + alias index + health_tags ----------
 
