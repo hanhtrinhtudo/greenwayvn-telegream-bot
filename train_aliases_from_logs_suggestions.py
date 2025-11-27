@@ -3,6 +3,7 @@ import json
 import re
 import time
 from collections import defaultdict
+from datetime import datetime
 
 import requests
 from dotenv import load_dotenv
@@ -15,12 +16,13 @@ except ImportError:
 # ========== ENV ==========
 load_dotenv()
 
-OPENAI_API_KEY        = os.getenv("OPENAI_API_KEY", "")
-LOG_SHEET_EXPORT_URL  = os.getenv("LOG_SHEET_EXPORT_URL", "")
-BASE_DIR              = os.path.dirname(__file__)
-DATA_DIR              = os.path.join(BASE_DIR, "data")
-PRODUCTS_PATH         = os.path.join(DATA_DIR, "products.json")
-COMBOS_PATH           = os.path.join(DATA_DIR, "combos.json")
+OPENAI_API_KEY       = os.getenv("OPENAI_API_KEY", "")
+LOG_SHEET_EXPORT_URL = os.getenv("LOG_SHEET_EXPORT_URL", "")
+BASE_DIR             = os.path.dirname(__file__)
+DATA_DIR             = os.path.join(BASE_DIR, "data")
+PRODUCTS_PATH        = os.path.join(DATA_DIR, "products.json")
+COMBOS_PATH          = os.path.join(DATA_DIR, "combos.json")
+OUT_PATH             = os.path.join(DATA_DIR, "update_suggestions.json")
 
 if not OPENAI_API_KEY or OpenAI is None:
     raise RuntimeError("Cần OPENAI_API_KEY và thư viện openai để chạy script tự học.")
@@ -153,7 +155,6 @@ def ask_model_for_mapping(question_text: str, product_map, combo_map):
     try:
         data = json.loads(raw)
     except Exception:
-        # nếu model trả về không phải JSON chuẩn
         print("!! Model trả về không parse được JSON, content:", raw[:200])
         return {
             "type": "none",
@@ -163,7 +164,6 @@ def ask_model_for_mapping(question_text: str, product_map, combo_map):
             "aliases_to_add": []
         }
 
-    # đảm bảo đủ field
     return {
         "type": data.get("type", "none"),
         "codes": data.get("codes", []),
@@ -173,14 +173,14 @@ def ask_model_for_mapping(question_text: str, product_map, combo_map):
     }
 
 
-# ========== Tự học alias từ Logs ==========
+# ========== Tự học alias từ Logs → sinh update_suggestions.json ==========
 def main():
     logs = fetch_logs()
     if not logs:
         print("[*] Không có log nào, dừng.")
         return
 
-    # Gom theo câu hỏi (Text)
+    # Gom theo câu hỏi (Text chuẩn hóa)
     grouped = defaultdict(list)
     for row in logs:
         text = (row.get("Text") or "").strip()
@@ -190,18 +190,17 @@ def main():
 
     print(f"[*] Có {len(grouped)} nhóm câu hỏi để xem xét.")
 
-    products_data, combos_data, product_map, combo_map = load_products_and_combos()
+    _, _, product_map, combo_map = load_products_and_combos()
 
-    # Chuẩn bị để chỉnh products.json / combos.json
-    products_changed = False
-    combos_changed = False
+    MIN_COUNT = 3          # Ít nhất 3 lần xuất hiện mới gợi ý
+    CONF_THRESHOLD = 0.9   # Chỉ nhận khi confidence >= 0.9
 
-    MIN_COUNT = 3          # ít nhất 3 lần xuất hiện
-    CONF_THRESHOLD = 0.9   # chỉ nhận khi confidence >= 0.9
+    product_alias_suggestions = []
+    combo_alias_suggestions   = []
 
     for norm_q, texts in grouped.items():
         if len(texts) < MIN_COUNT:
-            continue  # câu hỏi hiếm, bỏ qua để tránh học nhầm
+            continue
 
         question_example = texts[0]
         print(f"\n=== XỬ LÝ CÂU HỎI: \"{question_example}\" (xuất hiện {len(texts)} lần) ===")
@@ -209,7 +208,7 @@ def main():
         mapping = ask_model_for_mapping(question_example, product_map, combo_map)
         mtype   = mapping["type"]
         conf    = mapping["confidence"]
-        aliases_to_add = mapping.get("aliases_to_add", [])
+        aliases_to_add = mapping.get("aliases_to_add", []) or []
 
         print("Model đề xuất:", mapping)
 
@@ -218,53 +217,64 @@ def main():
             continue
 
         if mtype == "product":
+            codes = []
+            names = []
             for code in mapping["codes"]:
                 code = str(code).strip()
                 p = product_map.get(code)
                 if not p:
                     continue
-                if "aliases" not in p or not isinstance(p["aliases"], list):
-                    p["aliases"] = []
-                # thêm nguyên câu hỏi & các alias gợi ý
-                for alias in set([question_example] + aliases_to_add):
-                    alias = alias.strip()
-                    if alias and alias not in p["aliases"]:
-                        p["aliases"].append(alias)
-                        print(f"→ Thêm alias '{alias}' cho product {code} - {p.get('name','')}")
-                        products_changed = True
+                codes.append(code)
+                names.append(p.get("name", ""))
+            if not codes:
+                print("→ Không tìm được product hợp lệ, bỏ qua.")
+                continue
+
+            sugg_aliases = list({question_example, *aliases_to_add})
+            product_alias_suggestions.append({
+                "question_example": question_example,
+                "times_seen": len(texts),
+                "codes": codes,
+                "product_names": names,
+                "suggested_aliases": sugg_aliases,
+                "confidence": conf
+            })
 
         elif mtype == "combo":
             cid = mapping.get("combo_id")
             c = combo_map.get(cid)
             if not c:
-                print("→ combo_id không tồn tại, bỏ qua")
+                print("→ combo_id không tồn tại, bỏ qua.")
                 continue
-            if "aliases" not in c or not isinstance(c["aliases"], list):
-                c["aliases"] = []
-            for alias in set([question_example] + aliases_to_add):
-                alias = alias.strip()
-                if alias and alias not in c["aliases"]:
-                    c["aliases"].append(alias)
-                    print(f"→ Thêm alias '{alias}' cho combo {cid} - {c.get('name','')}")
-                    combos_changed = True
 
-        # tránh spam OpenAI quá nhanh
-        time.sleep(0.5)
+            sugg_aliases = list({question_example, *aliases_to_add})
+            combo_alias_suggestions.append({
+                "question_example": question_example,
+                "times_seen": len(texts),
+                "combo_id": cid,
+                "combo_name": c.get("name", ""),
+                "suggested_aliases": sugg_aliases,
+                "confidence": conf
+            })
 
-    # Lưu lại file nếu có thay đổi
-    if products_changed:
-        print("\n[*] Ghi lại products.json với aliases mới...")
-        save_json(PRODUCTS_PATH, products_data)
-    else:
-        print("\n[*] Không có thay đổi cho products.json")
+        time.sleep(0.5)  # tránh spam OpenAI quá nhanh
 
-    if combos_changed:
-        print("[*] Ghi lại combos.json với aliases mới...")
-        save_json(COMBOS_PATH, combos_data)
-    else:
-        print("[*] Không có thay đổi cho combos.json")
+    update_obj = {
+        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "from_logs_url": LOG_SHEET_EXPORT_URL,
+        "stats": {
+            "question_groups_total": len(grouped),
+            "min_count_threshold": MIN_COUNT,
+            "confidence_threshold": CONF_THRESHOLD,
+            "product_alias_suggestions": len(product_alias_suggestions),
+            "combo_alias_suggestions": len(combo_alias_suggestions),
+        },
+        "product_aliases": product_alias_suggestions,
+        "combo_aliases": combo_alias_suggestions
+    }
 
-    print("\n✅ Hoàn tất 1 vòng tự học alias từ Logs.")
+    save_json(OUT_PATH, update_obj)
+    print("\n✅ Đã sinh file gợi ý:", OUT_PATH)
 
 
 if __name__ == "__main__":
