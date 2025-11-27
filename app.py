@@ -126,6 +126,19 @@ def normalize_for_match(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
+NEGATIVE_FEEDBACK_KEYWORDS = [
+    "sai rồi", "sai roi", "không đúng", "khong dung",
+    "không phải", "khong phai", "nhầm rồi", "nham roi",
+    "ko đúng", "ko dung", "ko phải", "ko phai",
+    "chưa đúng", "chua dung", "tư vấn sai", "tu van sai",
+    "sai combo", "sai sản phẩm", "sai san pham"
+]
+
+def is_negative_feedback(text: str) -> bool:
+    """TVV chê câu trả lời trước là sai / không hợp lý."""
+    t = (text or "").lower()
+    return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
+
 # Map keyword → health_tag (không phụ thuộc dữ liệu, anh có thể bổ sung dần)
 _HEALTH_KEYWORD_TO_TAG_RAW = {
     "tiểu đường": "tieu_duong",
@@ -800,12 +813,12 @@ def polish_answer_with_ai(answer: str) -> str:
         return answer
     try:
         sys_prompt = (
-            "Bạn là trợ lý trả lời cho đội tư vấn viên sản phẩm sức khỏe.\n"
-            "Hãy viết lại câu trả lời tiếng Việt cho tự nhiên, rõ ràng, dễ copy gửi cho khách.\n"
-            "YÊU CẦU BẮT BUỘC:\n"
-            "- KHÔNG thêm bất kỳ claim/lợi ích/thông tin mới nào ngoài nội dung đã có.\n"
-            "- GIỮ NGUYÊN tất cả tên sản phẩm, mã sản phẩm, giá, đường link URL, liều dùng.\n"
-            "- Nếu có cảnh báo/lưu ý trong nội dung gốc, phải giữ nguyên.\n"
+            "Bạn là trợ lý viết lại câu trả lời cho đội tư vấn viên sản phẩm sức khỏe tại Việt Nam.\n"
+            "- Xưng hô: em – anh/chị, giọng nói thân thiện, tôn trọng nhưng gần gũi.\n"
+            "- Giữ nội dung chuyên môn, *không được thêm claim hoặc lợi ích mới* ngoài những gì đã có.\n"
+            "- Giữ nguyên tên sản phẩm, mã sản phẩm, giá và đường link.\n"
+            "- Ưu tiên viết ngắn gọn, chia ý bằng gạch đầu dòng, tránh đoạn văn quá dài.\n"
+            "- Nếu nội dung đã rõ, chỉ chỉnh sửa câu chữ cho tự nhiên, không cần kéo dài thêm."
         )
         resp = client.chat.completions.create(
             model="gpt-4.1-mini",
@@ -828,18 +841,20 @@ def format_combo_answer(combo):
     duration = combo.get("duration_text", "")
 
     lines = [f"*{name}*"]
+
     if header:
-        lines.append(f"_{header}_")
+        lines.append(f"_Mục tiêu chính:_ {header}")
+
     if duration:
-        lines.append(f"\n⏱ *Thời gian khuyến nghị:* {duration}")
+        lines.append(f"⏱ *Thời gian khuyến nghị:* {duration}")
 
     combo_usecase = build_usecase_from_tags(combo.get("health_tags", []))
     if combo_usecase:
-        lines.append(f"\n🎯 *Combo này phù hợp:* {combo_usecase}")
+        lines.append(f"\n🎯 *Phù hợp với:* {combo_usecase}")
 
-    lines.append("\n🧩 *Các sản phẩm trong combo:*")
+    lines.append("\n🧩 *Gồm các sản phẩm:*")
 
-    products_info = []
+    blocks = []
     for item in combo.get("products", []):
         code = (item.get("product_code") or "").strip()
         dose = (item.get("dose_text") or "").strip()
@@ -850,43 +865,37 @@ def format_combo_answer(combo):
         price       = item.get("price_text")  or p.get("price_text", "")
         url         = item.get("product_url") or p.get("product_url", "")
         benefits    = item.get("benefits_text")    or p.get("benefits_text")    or p.get("benefits", "")
-        ingredients = item.get("ingredients_text") or p.get("ingredients_text") or p.get("ingredients", "")
         usage       = item.get("usage_text")       or p.get("usage_text")       or p.get("usage", "")
         tags        = item.get("health_tags")      or p.get("health_tags", [])
         usecase     = build_usecase_from_tags(tags)
 
-        block = f"• *{pname}* ({code})"
+        b = f"• *{pname}* ({code})"
         if price:
-            block += f"\n  - Giá tham khảo: {price}"
+            b += f"\n  - Giá tham khảo: {price}"
         if benefits:
-            block += f"\n  - Lợi ích chính: {benefits}"
+            b += f"\n  - Công dụng chính: {benefits}"
         if usecase:
-            block += f"\n  - Dùng trong các trường hợp: {usecase}"
-        if ingredients:
-            block += f"\n  - Thành phần nổi bật: {ingredients}"
-
-        if usage and dose and usage.strip() != dose.strip():
-            block += f"\n  - Cách dùng theo NSX: {usage}"
-            block += f"\n  - Cách dùng gợi ý trong combo: {dose}"
-        elif dose:
-            block += f"\n  - Cách dùng gợi ý: {dose}"
+            b += f"\n  - Dùng nhiều cho: {usecase}"
+        if dose:
+            b += f"\n  - Liều dùng gợi ý trong combo: {dose}"
         elif usage:
-            block += f"\n  - Cách dùng gợi ý: {usage}"
+            b += f"\n  - Cách dùng gợi ý: {usage}"
 
-        # Hết hàng / còn hàng
         if is_product_out_of_stock(p):
-            block += "\n  - ⚠️ Sản phẩm này hiện tạm hết hàng trên hệ thống, anh/chị vui lòng liên hệ kho hoặc tham khảo sản phẩm khác phù hợp."
+            b += "\n  - ⚠️ Hiện sản phẩm này tạm hết hàng trên hệ thống, anh/chị có thể hỏi kho hoặc chọn sản phẩm tương đương."
         elif url:
-            block += f"\n  - 🔗 Link sản phẩm: {url}"
+            b += f"\n  - 🔗 Link tham khảo: {url}"
 
-        products_info.append(block)
+        blocks.append(b)
 
-    lines.append("\n" + "\n\n".join(products_info))
+    lines.append("\n" + "\n\n".join(blocks))
+
     lines.append(
-        "\n⚠️ Lưu ý: Đây là combo hỗ trợ, không thay thế thuốc điều trị. "
-        "TVV nên nhắc khách tuân thủ tư vấn của bác sĩ, kết hợp chế độ ăn uống, vận động, tái khám định kỳ."
+        "\n⚠️ Đây là combo hỗ trợ, *không thay thế thuốc điều trị*. "
+        "Anh/chị nhớ dặn khách duy trì phác đồ của bác sĩ, kết hợp ăn uống và vận động phù hợp giúp tối ưu hiệu quả."
     )
-    lines.append("\n👉 TVV có thể điều chỉnh câu chữ cho phù hợp với khách hàng cụ thể.")
+    lines.append("\n👉 Anh/chị có thể tùy chỉnh lại câu chữ cho phù hợp với cách nói chuyện của mình trước khi gửi cho khách.")
+
     return "\n".join(lines)
 
 def format_products_answer(products):
@@ -1148,6 +1157,44 @@ def webhook():
         log_to_sheet(log_payload)
 
         return jsonify(ok=True)
+    
+    # ===== Nếu đây là phản hồi chê sai → xin lỗi & hỏi lại cho rõ =====
+    if is_negative_feedback(text):
+        reply = (
+            "Dạ em xin lỗi, gợi ý ở trên chưa đúng ý anh/chị rồi ạ. 🙏\n\n"
+            "Anh/chị mô tả giúp em rõ hơn:\n"
+            "• Tình trạng của khách (bệnh nền, triệu chứng chính)\n"
+            "• Mong muốn ưu tiên (giảm triệu chứng, giảm mỡ, hỗ trợ gan, v.v.)\n\n"
+            "Nếu anh/chị biết combo/sản phẩm nào công ty đang khuyến nghị cho case này "
+            "thì nói tên/mã cho em, lần sau em sẽ ưu tiên đúng combo đó luôn ạ."
+        )
+        reply = polish_answer_with_ai(reply)
+        send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
+
+        # Log riêng để script tự học nhận ra đây là feedback negative
+        log_payload = {
+            "chat_id": chat_id,
+            "user_name": user_name,
+            "text": text,
+            "bot_reply": reply,
+            "intent": "user_feedback_negative",
+            "parsed_symptoms": [],
+            "parsed_goals": [],
+            "parsed_target": "",
+            "need_meal_plan": False,
+            "health_tags": [],
+            "matched_combo_id": "",
+            "matched_combo_name": "",
+            "matched_product_code": "",
+            "matched_product_name": "",
+            "ranked_combos": [],
+            "ranked_products": [],
+            "final_combo_id": "",
+            "final_product_code": "",
+            "feedback": "",
+        }
+        log_to_sheet(log_payload)
+        return jsonify(ok=True)
 
     # ===== Bình thường: phân loại intent =====
     intent = classify_intent(text)
@@ -1202,7 +1249,7 @@ def webhook():
     else:
         reply = answer_fallback()
 
-        # Mượt hóa bằng OpenAI (nếu bật)
+    # Mượt hóa bằng OpenAI (nếu bật)
     reply = polish_answer_with_ai(reply)
 
     # Gửi lại cho TVV
