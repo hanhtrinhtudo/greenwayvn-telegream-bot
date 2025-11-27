@@ -30,6 +30,9 @@ ENABLE_AI_POLISH      = os.getenv("ENABLE_AI_POLISH", "true").lower() == "true"
 # Lưu trạng thái: TVV vừa bấm "Kết nối tuyến trên" và đang chuẩn bị gửi câu hỏi
 ESCALATION_PENDING: dict[int, bool] = {}  # {chat_id: True}
 
+# Lưu context hội thoại ngắn hạn cho từng TVV
+CHAT_CONTEXT: dict[int, dict] = {}  # {chat_id: {...}}
+
 if not TELEGRAM_TOKEN:
     raise RuntimeError("Chưa cấu hình TELEGRAM_TOKEN trong .env")
 
@@ -125,14 +128,6 @@ def normalize_for_match(s: str) -> str:
     s = re.sub(r"[^a-z0-9\s]", " ", s)
     s = re.sub(r"\s+", " ", s).strip()
     return s
-
-NEGATIVE_FEEDBACK_KEYWORDS = [
-    "sai rồi", "sai roi", "không đúng", "khong dung",
-    "không phải", "khong phai", "nhầm rồi", "nham roi",
-    "ko đúng", "ko dung", "ko phải", "ko phai",
-    "chưa đúng", "chua dung", "tư vấn sai", "tu van sai",
-    "sai combo", "sai sản phẩm", "sai san pham"
-]
 
 def is_negative_feedback(text: str) -> bool:
     """TVV chê câu trả lời trước là sai / không hợp lý."""
@@ -394,6 +389,48 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="Markdown"):
 def contains_any(text, keywords):
     text = text.lower()
     return any(k.lower() in text for k in keywords)
+# ==== NLP helper: phản hồi & chỉnh sản phẩm ====
+
+NEGATIVE_FEEDBACK_KEYWORDS = [
+    "sai rồi", "sai roi",
+    "không đúng", "khong dung",
+    "không phải", "khong phai",
+    "nhầm rồi", "nham roi",
+    "ko đúng", "ko dung",
+    "ko phải", "ko phai",
+    "chưa đúng", "chua dung",
+    "tư vấn sai", "tu van sai",
+    "sai combo", "sai sản phẩm", "sai san pham",
+    "không liên quan", "khong lien quan",
+]
+
+CORRECTION_KEYWORDS = [
+    "phải là", "phai la",
+    "đúng là", "dung la",
+    "riêng sản phẩm", "rieng san pham",
+    "dùng sản phẩm", "dung san pham",
+    "cho anh sản phẩm", "cho em sản phẩm",
+]
+
+def is_negative_feedback(text: str) -> bool:
+    """TVV đang chê câu trả lời trước: sai / không đúng / không liên quan."""
+    t = (text or "").lower()
+    return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
+
+def seems_like_product_correction(text: str) -> bool:
+    """
+    TVV đang yêu cầu/đính chính 1 *sản phẩm cụ thể* (Element Curcumin, Digestorium...),
+    thường có cụm 'phải là', 'đúng là', 'sản phẩm ...'.
+    """
+    t = (text or "").lower()
+    return any(kw in t for kw in CORRECTION_KEYWORDS)
+
+def update_chat_context(chat_id, **kwargs):
+    """Cập nhật bộ nhớ ngắn hạn cho 1 TVV."""
+    ctx = CHAT_CONTEXT.get(chat_id) or {}
+    ctx.update(kwargs)
+    CHAT_CONTEXT[chat_id] = ctx
+    return ctx
 
 def extract_code(text: str):
     """Bắt mã sản phẩm dạng 0xxxxx."""
@@ -1158,43 +1195,80 @@ def webhook():
 
         return jsonify(ok=True)
     
-    # ===== Nếu đây là phản hồi chê sai → xin lỗi & hỏi lại cho rõ =====
+    # ====== NLP + CONTEXT: xử lý phản hồi & chỉnh sản phẩm ======
+    ctx = CHAT_CONTEXT.get(chat_id, {})
+
+    # 1) TVV chê câu trả lời trước là sai
     if is_negative_feedback(text):
         reply = (
             "Dạ em xin lỗi, gợi ý ở trên chưa đúng ý anh/chị rồi ạ. 🙏\n\n"
-            "Anh/chị mô tả giúp em rõ hơn:\n"
-            "• Tình trạng của khách (bệnh nền, triệu chứng chính)\n"
-            "• Mong muốn ưu tiên (giảm triệu chứng, giảm mỡ, hỗ trợ gan, v.v.)\n\n"
-            "Nếu anh/chị biết combo/sản phẩm nào công ty đang khuyến nghị cho case này "
-            "thì nói tên/mã cho em, lần sau em sẽ ưu tiên đúng combo đó luôn ạ."
+            "Anh/chị mô tả giúp em rõ hơn tình trạng của khách (bệnh nền, triệu chứng chính) "
+            "và mong muốn ưu tiên (giảm triệu chứng, hỗ trợ gan, giảm mỡ, v.v.) "
+            "để em xem lại cho chuẩn hơn ạ."
         )
         reply = polish_answer_with_ai(reply)
         send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
 
-        # Log riêng để script tự học nhận ra đây là feedback negative
+        # Cập nhật context: lần trước tư vấn combo/sản phẩm nào
+        update_chat_context(
+            chat_id,
+            last_intent="user_feedback_negative",
+            last_text=text,
+            last_reply=reply,
+        )
+
+        # Log: để auto-learning hiểu đây là feedback NEGATIVE
         log_payload = {
             "chat_id": chat_id,
             "user_name": user_name,
             "text": text,
-            "bot_reply": reply,
             "intent": "user_feedback_negative",
-            "parsed_symptoms": [],
-            "parsed_goals": [],
-            "parsed_target": "",
-            "need_meal_plan": False,
-            "health_tags": [],
-            "matched_combo_id": "",
-            "matched_combo_name": "",
-            "matched_product_code": "",
-            "matched_product_name": "",
-            "ranked_combos": [],
-            "ranked_products": [],
-            "final_combo_id": "",
-            "final_product_code": "",
-            "feedback": "",
+            "matched_combo_id": ctx.get("last_matched_combo_id", ""),
+            "matched_combo_name": ctx.get("last_matched_combo_name", ""),
+            "matched_product_code": ctx.get("last_matched_product_code", ""),
+            "matched_product_name": ctx.get("last_matched_product_name", ""),
         }
         log_to_sheet(log_payload)
+
         return jsonify(ok=True)
+
+    # 2) TVV chỉnh lại: phải là 1 *sản phẩm cụ thể* (Element Curcumin…)
+    if seems_like_product_correction(text):
+        # Thử tìm sản phẩm theo alias trong câu
+        products = find_best_products(text, limit=3)
+        if products:
+            main_product = products[0]  # ưu tiên 1 sản phẩm rõ nhất
+            reply = format_products_answer([main_product])
+            reply = polish_answer_with_ai(reply)
+            send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
+
+            matched_product_code = main_product.get("code", "")
+            matched_product_name = main_product.get("name", "")
+
+            update_chat_context(
+                chat_id,
+                last_intent="product_correction",
+                last_text=text,
+                last_reply=reply,
+                last_matched_combo_id="",
+                last_matched_combo_name="",
+                last_matched_product_code=matched_product_code,
+                last_matched_product_name=matched_product_name,
+            )
+
+            log_payload = {
+                "chat_id": chat_id,
+                "user_name": user_name,
+                "text": text,
+                "intent": "product_correction",
+                "matched_combo_id": "",
+                "matched_combo_name": "",
+                "matched_product_code": matched_product_code,
+                "matched_product_name": matched_product_name,
+            }
+            log_to_sheet(log_payload)
+
+            return jsonify(ok=True)
 
     # ===== Bình thường: phân loại intent =====
     intent = classify_intent(text)
@@ -1283,6 +1357,17 @@ def webhook():
         }
         for p in ranked_products_list
     ]
+    # Cập nhật bộ nhớ ngắn hạn cho cuộc hội thoại này
+    update_chat_context(
+        chat_id,
+        last_intent=intent,
+        last_text=text,
+        last_reply=reply,
+        last_matched_combo_id=matched_combo_id,
+        last_matched_combo_name=matched_combo_name,
+        last_matched_product_code=matched_product_code,
+        last_matched_product_name=matched_product_name,
+    )
 
     log_payload = {
         "chat_id": chat_id,
