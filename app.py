@@ -86,7 +86,7 @@ HEALTH_TAG_LABELS = {
     "giam_mo": "giảm mỡ, kiểm soát cân nặng",
 }
 # Bổ sung/ghi đè nhãn từ file health_tags_info.json (nếu có)
-if "HEALTH_TAGS_INFO" in globals() and HEALTH_TAGS_INFO:
+if HEALTH_TAGS_INFO:
     for _tag, _info in HEALTH_TAGS_INFO.items():
         _lbl = (_info.get("label") or "").strip()
         if _lbl:
@@ -99,6 +99,18 @@ def build_usecase_from_tags(tags):
         if lbl and lbl not in labels:
             labels.append(lbl)
     return "; ".join(labels)
+
+# ---------- Helper: kiểm tra hết hàng ----------
+def is_product_out_of_stock(p: dict) -> bool:
+    """
+    Quy ước hiện tại:
+    - Nếu có field in_stock = False → hết hàng.
+    - Nếu không có link (product_url/url) → coi như tạm hết hàng.
+    """
+    if isinstance(p.get("in_stock"), bool):
+        return not p["in_stock"]
+    url = (p.get("product_url") or p.get("url") or "").strip()
+    return url == ""
 
 # ---------- Helper chuẩn hóa & health tags ----------
 
@@ -161,14 +173,13 @@ _HEALTH_KEYWORD_TO_TAG_RAW = {
     "ung thư": "ung_thu",
 }
 
-# Chuẩn hóa keyword map
 HEALTH_KEYWORD_TO_TAG = {
     normalize_for_match(k): v for k, v in _HEALTH_KEYWORD_TO_TAG_RAW.items()
 }
 
 # Chuẩn hóa symptoms_map từ file JSON: key (triệu chứng) → list health_tags
 SYMPTOMS_MAP_NORM = {}
-if "SYMPTOMS_MAP_RAW" in globals() and isinstance(SYMPTOMS_MAP_RAW, dict):
+if isinstance(SYMPTOMS_MAP_RAW, dict):
     for raw_symptom, info in SYMPTOMS_MAP_RAW.items():
         tags = []
         if isinstance(info, dict):
@@ -180,22 +191,16 @@ if "SYMPTOMS_MAP_RAW" in globals() and isinstance(SYMPTOMS_MAP_RAW, dict):
             SYMPTOMS_MAP_NORM[key_norm] = tags
 
 def extract_health_tags_from_text(text: str):
-    """Trích health_tags từ câu mô tả triệu chứng/bệnh lý.
-
-    Ưu tiên:
-    1) Map từ symptoms_map.json (triệu chứng → nhiều health_tags)
-    2) Fallback: map từ keyword tĩnh HEALTH_KEYWORD_TO_TAG
-    """
+    """Trích health_tags từ câu mô tả triệu chứng/bệnh lý."""
     nt = normalize_for_match(text)
     tags: set[str] = set()
 
     # 1) Theo triệu chứng trong file JSON
-    if "SYMPTOMS_MAP_NORM" in globals():
-        for sym_norm, tags_list in SYMPTOMS_MAP_NORM.items():
-            if sym_norm and sym_norm in nt:
-                for t in tags_list:
-                    if t:
-                        tags.add(t)
+    for sym_norm, tags_list in SYMPTOMS_MAP_NORM.items():
+        if sym_norm and sym_norm in nt:
+            for t in tags_list:
+                if t:
+                    tags.add(t)
 
     # 2) Theo keyword map cứng (bổ sung)
     for kw_norm, tag in HEALTH_KEYWORD_TO_TAG.items():
@@ -216,8 +221,6 @@ def build_product_aliases(p: dict):
     if name:
         aliases.add(name)
         aliases.add(name.lower())
-
-        # tách theo ngoặc, dấu /, -, …
         for part in re.findall(r"[\w\u00C0-\u017F\-\/]+", name):
             aliases.add(part)
 
@@ -228,7 +231,6 @@ def build_product_aliases(p: dict):
     if code:
         aliases.add(code)
 
-    # chuẩn hóa khoảng trắng
     aliases_clean = []
     for a in aliases:
         a2 = re.sub(r"\s+", " ", str(a)).strip()
@@ -288,15 +290,14 @@ for p in PRODUCTS:
         PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(code)
 
 # Bổ sung alias từ file product_aliases.json (nếu có)
-if "PRODUCT_ALIASES_BY_ALIAS" in globals() and PRODUCT_ALIASES_BY_ALIAS:
-    for alias_norm, codes in PRODUCT_ALIASES_BY_ALIAS.items():
-        na = normalize_for_match(alias_norm)
-        if not na:
+for alias_norm, codes in PRODUCT_ALIASES_BY_ALIAS.items():
+    na = normalize_for_match(alias_norm)
+    if not na:
+        continue
+    for code in codes:
+        if not code:
             continue
-        for code in codes:
-            if not code:
-                continue
-            PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(str(code))
+        PRODUCT_ALIAS_INDEX.setdefault(na, set()).add(str(code))
 
 # ---------- Build COMBOS + alias index + health_tags ----------
 
@@ -308,7 +309,6 @@ for c in COMBOS:
     cid = c.get("id") or normalize_for_match(c.get("name", "") or "")
     c["id"] = cid
 
-    # health_tags combo = tag từ JSON + tag từ tên/description + tag của từng product trong combo
     combo_tags = set(c.get("health_tags", []))
     text_for_tags = " ".join([
         c.get("name", ""),
@@ -322,7 +322,6 @@ for c in COMBOS:
         item["product_code"] = code
         p = PRODUCT_MAP.get(code)
         if p:
-            # đẩy name/url/price từ product sang nếu thiếu
             item.setdefault("name", p.get("name", ""))
             item.setdefault("price_text", p.get("price_text", ""))
             item.setdefault("product_url", p.get("product_url", ""))
@@ -384,23 +383,17 @@ def contains_any(text, keywords):
     return any(k.lower() in text for k in keywords)
 
 def extract_code(text: str):
-    """
-    Tự động bắt mã sản phẩm dạng 6 chữ số (VD: 070728, 01590…).
-    Có thể tùy chỉnh regex nếu cần.
-    """
+    """Bắt mã sản phẩm dạng 0xxxxx."""
     text = text.strip()
     codes = re.findall(r"\b0\d{4,5}\b", text)
     return codes[0] if codes else None
 
 def find_best_products(text: str, limit: int = 5):
-    """
-    Tìm sản phẩm theo alias (name, mã, alias mở rộng).
-    """
+    """Tìm sản phẩm theo alias (name, mã, alias mở rộng)."""
     t = normalize_for_match(text)
     results = []
     seen = set()
 
-    # match alias_norm nằm trong text_norm
     for alias_norm, codes in PRODUCT_ALIAS_INDEX.items():
         if alias_norm and alias_norm in t:
             for code in codes:
@@ -410,7 +403,6 @@ def find_best_products(text: str, limit: int = 5):
                     if len(results) >= limit:
                         return results
 
-    # fallback: match theo từng token
     if not results:
         tokens = t.split()
         for alias_norm, codes in PRODUCT_ALIAS_INDEX.items():
@@ -425,14 +417,11 @@ def find_best_products(text: str, limit: int = 5):
     return results
 
 def find_products_by_health(text: str, limit: int = 5):
-    """
-    Tìm sản phẩm theo health_tags (từ JSON) + từ khóa trong câu.
-    """
+    """Tìm sản phẩm theo health_tags (từ JSON) + từ khóa trong câu."""
     tags_from_text = extract_health_tags_from_text(text)
     results = []
     seen = set()
 
-    # Ưu tiên match theo health_tags
     if tags_from_text:
         for p in PRODUCTS:
             p_tags = set(p.get("health_tags", []))
@@ -444,16 +433,12 @@ def find_products_by_health(text: str, limit: int = 5):
                     if len(results) >= limit:
                         break
 
-    # Nếu chưa có gì → fallback theo alias
     if not results:
         results = find_best_products(text, limit=limit)
 
     return results
 
 def find_best_combo(text: str, limit: int = 3):
-    """
-    Match combo theo alias (tên, alias) – dùng cho fallback.
-    """
     t = normalize_for_match(text)
     results = []
     seen = set()
@@ -470,19 +455,14 @@ def find_best_combo(text: str, limit: int = 3):
     return results
 
 def find_combo_by_health_keyword(text: str) -> dict | None:
-    """
-    Tìm combo theo health_tags + alias.
-    """
     tags_from_text = extract_health_tags_from_text(text)
     best = None
     score_best = 0
     text_norm = normalize_for_match(text)
 
-    # Ưu tiên match theo health_tags
     for c in COMBOS:
         c_tags = set(c.get("health_tags", []))
         score = len(c_tags.intersection(tags_from_text)) if tags_from_text else 0
-        # cộng thêm điểm nếu alias trùng trong text
         for a in c.get("aliases", []):
             if normalize_for_match(a) in text_norm:
                 score += 1
@@ -490,23 +470,15 @@ def find_combo_by_health_keyword(text: str) -> dict | None:
             score_best = score
             best = c
 
-    # Nếu chưa ra, fallback thuần theo alias
     if not best:
         combos = find_best_combo(text, limit=1)
         best = combos[0] if combos else None
 
     return best
 
-# ============== Orchestrator: phân tích câu hỏi sức khỏe & gợi ý combo/sản phẩm ==============
+# ============== Orchestrator: phân tích câu hỏi & gợi ý combo/sản phẩm ==============
 
 def parse_user_query_with_ai(text: str) -> dict:
-    """
-    Dùng OpenAI để phân tích câu hỏi TVV thành cấu trúc:
-    - symptoms: danh sách triệu chứng/vấn đề sức khỏe
-    - goals: mục tiêu (giảm mỡ, thải độc gan, tăng cơ...)
-    - need_meal_plan: TVV có yêu cầu gợi ý bữa ăn kèm theo không
-    - target: "combo" | "product" | "info" | "auto"
-    """
     base = {
         "symptoms": [],
         "goals": [],
@@ -527,17 +499,14 @@ def parse_user_query_with_ai(text: str) -> dict:
                     "role": "system",
                     "content": (
                         "Bạn là bộ phân tích câu hỏi cho chatbot hỗ trợ tư vấn viên thực phẩm chức năng.\n"
-                        "Nhiệm vụ: đọc câu hỏi của TVV (tiếng Việt) và trích ra JSON với cấu trúc:\n"
+                        "Trả về JSON:\n"
                         "{\n"
-                        '  "symptoms": [danh sách triệu chứng, bệnh lý, vấn đề sức khỏe],\n'
-                        '  "goals": [danh sách mục tiêu như giảm mỡ, giảm cân, thải độc gan, tăng cơ...],\n'
-                        '  "need_meal_plan": true/false (TVV có cần gợi ý bữa ăn kèm theo không),\n'
-                        '  "target": "combo" | "product" | "info" | "auto"\n'
+                        '  \"symptoms\": [...],\n'
+                        '  \"goals\": [...],\n'
+                        '  \"need_meal_plan\": true/false,\n'
+                        '  \"target\": \"combo\" | \"product\" | \"info\" | \"auto\"\n'
                         "}\n"
-                        "- Nếu câu hỏi thiên về chọn combo → target=\"combo\"\n"
-                        "- Nếu hỏi về 1 sản phẩm cụ thể → target=\"product\" hoặc \"info\"\n"
-                        "- Nếu không rõ → target=\"auto\"\n"
-                        "Trả về *chỉ JSON* đúng cấu trúc, không giải thích thêm."
+                        "Chỉ trả JSON, không giải thích thêm."
                     ),
                 },
                 {"role": "user", "content": text},
@@ -550,17 +519,13 @@ def parse_user_query_with_ai(text: str) -> dict:
         return base
 
     parsed = dict(base)
-    # symptoms
-    symptoms = data.get("symptoms")
-    if isinstance(symptoms, list):
-        parsed["symptoms"] = [str(s).strip() for s in symptoms if s]
-    # goals
+    syms = data.get("symptoms")
+    if isinstance(syms, list):
+        parsed["symptoms"] = [str(s).strip() for s in syms if s]
     goals = data.get("goals")
     if isinstance(goals, list):
         parsed["goals"] = [str(g).strip() for g in goals if g]
-    # need_meal_plan
     parsed["need_meal_plan"] = bool(data.get("need_meal_plan", False))
-    # target
     target = str(data.get("target", "auto") or "auto").lower()
     if target not in ("combo", "product", "info", "auto"):
         target = "auto"
@@ -570,39 +535,28 @@ def parse_user_query_with_ai(text: str) -> dict:
 
 
 def rank_combos_and_products(parsed: dict, limit_combos: int = 3, limit_products: int = 5) -> dict:
-    """
-    Chấm điểm combo + sản phẩm dựa trên:
-    - health_tags trích từ symptoms + goals + raw_text
-    - trùng alias trong câu hỏi
-    """
     text = parsed.get("raw_text") or ""
     text_norm = normalize_for_match(text)
     tags: set[str] = set()
 
-    # Lấy tag từ symptoms + goals
     for s in parsed.get("symptoms") or []:
         tags.update(extract_health_tags_from_text(s))
     for g in parsed.get("goals") or []:
         tags.update(extract_health_tags_from_text(g))
 
-    # Nếu vẫn chưa có tag, lấy thẳng từ full câu hỏi
     if not tags:
         tags.update(extract_health_tags_from_text(text))
 
-    # Rank COMBO
     combo_scores: list[tuple[float, dict]] = []
     for c in COMBOS:
         c_tags = set(c.get("health_tags", []))
         if not c_tags:
             continue
         score = 0.0
-
-        # điểm theo health_tags
         inter = c_tags.intersection(tags)
         if inter:
             score += 2.0 * len(inter)
 
-        # cộng điểm nếu alias xuất hiện trong câu
         for a in c.get("aliases", []):
             na = normalize_for_match(a)
             if na and na in text_norm:
@@ -615,7 +569,6 @@ def rank_combos_and_products(parsed: dict, limit_combos: int = 3, limit_products
     combo_scores.sort(key=lambda x: x[0], reverse=True)
     top_combos = [c for score, c in combo_scores[:limit_combos]]
 
-    # Rank PRODUCT
     product_scores: list[tuple[float, dict]] = []
     for p in PRODUCTS:
         p_tags = set(p.get("health_tags", []))
@@ -627,7 +580,6 @@ def rank_combos_and_products(parsed: dict, limit_combos: int = 3, limit_products
         if inter:
             score += 2.0 * len(inter)
 
-        # alias
         for a in p.get("aliases", []):
             na = normalize_for_match(a)
             if na and na in text_norm:
@@ -637,6 +589,10 @@ def rank_combos_and_products(parsed: dict, limit_combos: int = 3, limit_products
         code = str(p.get("code") or "").strip()
         if code and code in text_norm.replace(" ", ""):
             score += 3.0
+
+        # Giảm ưu tiên sản phẩm hết hàng
+        if is_product_out_of_stock(p):
+            score -= 1.0
 
         if score > 0:
             product_scores.append((score, p))
@@ -652,32 +608,24 @@ def rank_combos_and_products(parsed: dict, limit_combos: int = 3, limit_products
 
 
 def build_meal_plan_snippet(parsed: dict) -> str:
-    """
-    Gợi ý khung bữa ăn dinh dưỡng (tăng cơ, giảm mỡ) khi need_meal_plan=True.
-    Chỉ là khung chung, không thay thế phác đồ dinh dưỡng của công ty.
-    """
     if not parsed.get("need_meal_plan"):
         return ""
-
     lines = []
     lines.append("\n🍽 *Gợi ý khung bữa ăn đi kèm:*")
     lines.append("- Sáng: Yến mạch + trứng/ức gà + 1 phần trái cây (táo/cam).")
     lines.append("- Trưa: Ức gà/cá + khoai lang/gạo lứt + nhiều rau xanh.")
     lines.append("- Tối: Cá/đậu phụ + rau củ + nấm, hạn chế tinh bột nhanh.")
     lines.append("- Uống 1.5–2L nước/ngày, hạn chế nước ngọt có đường, rượu bia.")
-    lines.append("- Nếu tập luyện: bổ sung bữa phụ trước/sau tập (chuối + sữa chua/yaourt không đường).")
+    lines.append("- Nếu tập luyện: bữa phụ trước/sau tập (chuối + sữa chua không đường).")
     return "\n".join(lines)
 
 
-def orchestrate_health_answer(text: str, intent: str) -> tuple[str, dict | None, dict | None]:
+def orchestrate_health_answer(text: str, intent: str):
     """
-    Orchestrator cho các intent: combo_health, health_products, product_info.
-    Trả về: (reply_text, matched_combo_dict_or_None, matched_product_dict_or_None)
+    Trả về: reply_text, matched_combo, matched_product, parsed, ranking
     """
     parsed = parse_user_query_with_ai(text)
     ranking = rank_combos_and_products(parsed)
-    text_norm = normalize_for_match(text)
-
     combos = ranking.get("combos") or []
     products = ranking.get("products") or []
 
@@ -685,7 +633,6 @@ def orchestrate_health_answer(text: str, intent: str) -> tuple[str, dict | None,
     matched_combo = None
     matched_product = None
 
-    # Ưu tiên chọn theo intent
     if intent == "combo_health":
         if combos:
             matched_combo = combos[0]
@@ -694,7 +641,6 @@ def orchestrate_health_answer(text: str, intent: str) -> tuple[str, dict | None,
             matched_product = products[0]
             reply = format_products_answer(products)
         else:
-            # Fallback về logic cũ
             combo_old = find_combo_by_health_keyword(text)
             if combo_old:
                 matched_combo = combo_old
@@ -719,7 +665,6 @@ def orchestrate_health_answer(text: str, intent: str) -> tuple[str, dict | None,
             reply = format_products_answer(products_old)
 
     elif intent == "product_info":
-        # Vẫn ưu tiên tìm sản phẩm cụ thể
         if products:
             matched_product = products[0]
             reply = format_products_answer(products)
@@ -729,19 +674,18 @@ def orchestrate_health_answer(text: str, intent: str) -> tuple[str, dict | None,
                 matched_product = products_old[0]
             reply = format_products_answer(products_old)
 
-    # Nếu TVV có yêu cầu bữa ăn kèm theo → thêm đoạn meal plan
     meal_plan = build_meal_plan_snippet(parsed)
     if meal_plan:
         reply = f"{reply}{meal_plan}"
 
-    return reply, matched_combo, matched_product
+    return reply, matched_combo, matched_product, parsed, ranking
 
 # ============== AI: phân loại intent ==============
 INTENT_LABELS = [
     "start",
     "buy_payment",
     "business_escalation",
-    "business_escalation_detail",  # dùng cho log khi TVV gửi nội dung nhờ tuyến trên
+    "business_escalation_detail",
     "channels",
     "combo_health",
     "product_info",
@@ -756,7 +700,6 @@ INTENT_LABELS = [
 ]
 
 def classify_intent_ai(text: str):
-    """Dùng OpenAI để hiểu câu hỏi tự nhiên hơn, trả về 1 intent label."""
     if not client:
         return None
     try:
@@ -798,7 +741,6 @@ def classify_intent_ai(text: str):
 def classify_intent_rules(text: str):
     t = text.lower().strip()
 
-    # Menu buttons
     if "combo theo vấn đề" in t:
         return "menu_combo"
     if "tra cứu sản phẩm" in t:
@@ -810,42 +752,36 @@ def classify_intent_rules(text: str):
     if "kênh & fanpage" in t or "kênh & fan" in t or "kênh và fanpage" in t:
         return "menu_channels"
 
-    # /start
     if t.startswith("/start") or "bắt đầu" in t or "hello" in t:
         return "start"
 
-    # Mã sản phẩm
     code = extract_code(t)
     if code and code in PRODUCT_MAP:
         return "product_by_code"
 
-    # Hỏi mua hàng / thanh toán
     if contains_any(t, ["mua hàng", "đặt hàng", "đặt mua", "thanh toán", "trả tiền", "ship", "giao hàng"]):
         return "buy_payment"
 
-    # Hỏi tuyến trên
     if contains_any(t, ["tuyến trên", "leader", "sponsor", "upline", "khó trả lời", "hỏi giúp"]):
         return "business_escalation"
 
-    # Kênh, fanpage
     if contains_any(t, ["kênh", "kenh", "fanpage", "facebook", "page", "kênh chính thức"]):
         return "channels"
 
-    # Vấn đề sức khỏe (ưu tiên combo trước)
-    if contains_any(t, ["tiểu đường", "đái tháo đường", "đường huyết",
-                        "dạ dày", "bao tử", "trào ngược", "ợ chua",
-                        "cơ xương khớp", "đau khớp", "gout",
-                        "huyết áp", "tim mạch",
-                        "gan", "men gan", "gan nhiễm mỡ",
-                        "tiêu hóa", "rối loạn tiêu hóa", "táo bón"]):
+    if contains_any(t, [
+        "tiểu đường", "đái tháo đường", "đường huyết",
+        "dạ dày", "bao tử", "trào ngược", "ợ chua",
+        "cơ xương khớp", "đau khớp", "gout",
+        "huyết áp", "tim mạch",
+        "gan", "men gan", "gan nhiễm mỡ",
+        "tiêu hóa", "rối loạn tiêu hóa", "táo bón"
+    ]):
         return "combo_health"
 
-    # Hỏi cụ thể về sản phẩm (theo tên / info)
     if contains_any(t, ["thành phần", "tác dụng", "lợi ích", "cách dùng", "công dụng", "uống như thế nào"]):
         return "product_info"
 
-    # Thử match combo / sản phẩm theo alias
-    if find_best_combo(t) is not None:
+    if find_best_combo(t):
         return "combo_health"
     if find_best_products(t):
         return "product_info"
@@ -897,7 +833,6 @@ def format_combo_answer(combo):
     if duration:
         lines.append(f"\n⏱ *Thời gian khuyến nghị:* {duration}")
 
-    # Dùng health_tags của combo để nói nhanh combo hỗ trợ gì
     combo_usecase = build_usecase_from_tags(combo.get("health_tags", []))
     if combo_usecase:
         lines.append(f"\n🎯 *Combo này phù hợp:* {combo_usecase}")
@@ -909,7 +844,6 @@ def format_combo_answer(combo):
         code = (item.get("product_code") or "").strip()
         dose = (item.get("dose_text") or "").strip()
 
-        # Lấy thông tin gốc từ PRODUCT_MAP
         p = PRODUCT_MAP.get(code, {}) if code else {}
 
         pname       = item.get("name")        or p.get("name")        or code
@@ -931,7 +865,6 @@ def format_combo_answer(combo):
         if ingredients:
             block += f"\n  - Thành phần nổi bật: {ingredients}"
 
-        # Phân biệt rõ “cách dùng NSX” và “cách dùng trong combo”
         if usage and dose and usage.strip() != dose.strip():
             block += f"\n  - Cách dùng theo NSX: {usage}"
             block += f"\n  - Cách dùng gợi ý trong combo: {dose}"
@@ -940,7 +873,10 @@ def format_combo_answer(combo):
         elif usage:
             block += f"\n  - Cách dùng gợi ý: {usage}"
 
-        if url:
+        # Hết hàng / còn hàng
+        if is_product_out_of_stock(p):
+            block += "\n  - ⚠️ Sản phẩm này hiện tạm hết hàng trên hệ thống, anh/chị vui lòng liên hệ kho hoặc tham khảo sản phẩm khác phù hợp."
+        elif url:
             block += f"\n  - 🔗 Link sản phẩm: {url}"
 
         products_info.append(block)
@@ -967,7 +903,7 @@ def format_products_answer(products):
         ingredients = p.get("ingredients_text", "") or p.get("ingredients", "")
         usage       = p.get("usage_text", "")       or p.get("usage", "")
         benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
-        url         = p.get("product_url", "")
+        url         = p.get("product_url", "")      or p.get("url", "")
         price       = p.get("price_text", "")       or p.get("price", "")
         tags        = p.get("health_tags", [])
         usecase     = build_usecase_from_tags(tags)
@@ -983,7 +919,9 @@ def format_products_answer(products):
             block += f"\n- Thành phần nổi bật: {ingredients}"
         if usage:
             block += f"\n- Cách dùng gợi ý: {usage}"
-        if url:
+        if is_product_out_of_stock(p):
+            block += "\n- ⚠️ Sản phẩm này hiện tạm hết hàng trên hệ thống, anh/chị vui lòng liên hệ kho hoặc tham khảo sản phẩm khác."
+        elif url:
             block += f"\n- 🔗 Link sản phẩm: {url}"
         lines.append(block)
         lines.append("")
@@ -1003,7 +941,7 @@ def format_product_by_code(code: str):
     ingredients = p.get("ingredients_text", "") or p.get("ingredients", "")
     usage       = p.get("usage_text", "")       or p.get("usage", "")
     benefits    = p.get("benefits_text", "")    or p.get("benefits", "")
-    url         = p.get("product_url", "")
+    url         = p.get("product_url", "")      or p.get("url", "")
     price       = p.get("price_text", "")       or p.get("price", "")
     tags        = p.get("health_tags", [])
     usecase     = build_usecase_from_tags(tags)
@@ -1019,7 +957,9 @@ def format_product_by_code(code: str):
         lines.append(f"- Thành phần nổi bật: {ingredients}")
     if usage:
         lines.append(f"- Cách dùng gợi ý: {usage}")
-    if url:
+    if is_product_out_of_stock(p):
+        lines.append("- ⚠️ Sản phẩm này hiện tạm hết hàng trên hệ thống, anh/chị vui lòng liên hệ kho hoặc tham khảo sản phẩm khác.")
+    elif url:
         lines.append(f"- 🔗 Link sản phẩm: {url}")
     lines.append(
         "\n👉 TVV có thể chỉnh sửa câu chữ cho phù hợp với khách, "
@@ -1129,20 +1069,16 @@ def webhook():
     user_name = (from_user.get("first_name", "") + " " +
                  from_user.get("last_name", "")).strip() or from_user.get("username", "")
 
-    # Nếu là tin nhắn từ nhóm / tài khoản tuyến trên
-    # → xử lý /reply <chat_id> ... hoặc reply vào tin forward
+    # ===== Tin nhắn từ nhóm tuyến trên =====
     if UPLINE_CHAT_ID and str(chat_id) == str(UPLINE_CHAT_ID) and text.strip():
         target_chat_id = None
         reply_body = None
 
-        # Cách 1: /reply <chat_id> Nội dung...
         m = re.match(r"^/reply\s+(-?\d+)\s+(.+)", text.strip(), re.DOTALL | re.IGNORECASE)
         if m:
             target_chat_id = int(m.group(1))
             reply_body = m.group(2).strip()
-
         else:
-            # Cách 2: reply vào tin "YÊU CẦU HỖ TRỢ TUYẾN TRÊN" mà bot đã gửi trong nhóm
             reply_msg = message.get("reply_to_message") or {}
             base_text = reply_msg.get("text") or ""
             m2 = re.search(r"chat_id:\s*`(-?\d+)`", base_text)
@@ -1153,13 +1089,11 @@ def webhook():
         if target_chat_id and reply_body:
             tvv_reply = f"*Trả lời từ tuyến trên:* 👇\n\n{reply_body}"
             tvv_reply = polish_answer_with_ai(tvv_reply)
-            # Gửi cho TVV kèm keyboard
             send_message(target_chat_id, tvv_reply, reply_markup=MAIN_KEYBOARD)
 
-            # Log lên Google Sheets (intent: upline_reply)
             log_payload = {
-                "chat_id": target_chat_id,           # chat của TVV
-                "user_name": user_name,              # tên người trả lời (tuyến trên)
+                "chat_id": target_chat_id,
+                "user_name": user_name,
                 "text": reply_body,
                 "intent": "upline_reply",
                 "matched_combo_id": "",
@@ -1171,20 +1105,17 @@ def webhook():
             }
             log_to_sheet(log_payload)
 
-        # Dù parse được hay không thì cũng kết thúc xử lý ở đây
         return jsonify(ok=True)
 
-    # Nếu không phải từ UPLINE_CHAT_ID → xử lý như TVV bình thường
-
+    # ===== Tin nhắn từ TVV =====
     if not text:
         send_message(chat_id, "Hiện tại em chỉ hiểu tin nhắn dạng text thôi ạ. 🙏", reply_markup=MAIN_KEYBOARD)
         return jsonify(ok=True)
 
-    # ====== Nếu TVV đang ở chế độ chờ mô tả câu hỏi cho tuyến trên ======
+    # Nếu đang chờ mô tả cho tuyến trên
     if ESCALATION_PENDING.get(chat_id):
         ESCALATION_PENDING.pop(chat_id, None)
 
-        # Gửi sang nhóm / leader tuyến trên
         if UPLINE_CHAT_ID:
             notify = (
                 "🔔 *YÊU CẦU HỖ TRỢ TUYẾN TRÊN*\n\n"
@@ -1204,7 +1135,6 @@ def webhook():
         confirm = polish_answer_with_ai(confirm)
         send_message(chat_id, confirm, reply_markup=MAIN_KEYBOARD)
 
-        # Log intent chi tiết tuyến trên
         log_payload = {
             "chat_id": chat_id,
             "user_name": user_name,
@@ -1219,7 +1149,7 @@ def webhook():
 
         return jsonify(ok=True)
 
-    # ====== Bình thường: phân loại intent ======
+    # ===== Bình thường: phân loại intent =====
     intent = classify_intent(text)
 
     matched_combo_id      = ""
@@ -1227,21 +1157,23 @@ def webhook():
     matched_product_code  = ""
     matched_product_name  = ""
 
+    parsed_for_log  = None
+    ranking_for_log = None
+
     # Xử lý intent
     if intent == "start":
         reply = answer_start()
 
-    elif intent in ("menu_combo",):
+    elif intent == "menu_combo":
         reply = answer_menu_combo()
 
-    elif intent in ("menu_product_search",):
+    elif intent == "menu_product_search":
         reply = answer_menu_product_search()
 
     elif intent in ("menu_buy_payment", "buy_payment"):
         reply = answer_buy_payment()
 
     elif intent in ("menu_business_escalation", "business_escalation"):
-        # Đánh dấu: tin nhắn kế tiếp sẽ là nội dung nhờ tuyến trên
         ESCALATION_PENDING[chat_id] = True
         reply = answer_business_escalation()
 
@@ -1257,27 +1189,10 @@ def webhook():
         else:
             reply = "Em chưa tìm được mã sản phẩm này, anh/chị kiểm tra lại giúp em nhé. 🙏"
 
-    elif intent == "combo_health":
-        reply, combo, product = orchestrate_health_answer(text, intent)
+    elif intent in ("combo_health", "health_products", "product_info"):
+        reply, combo, product, parsed_for_log, ranking_for_log = orchestrate_health_answer(text, intent)
+
         if combo:
-            matched_combo_id   = combo.get("id", "")
-            matched_combo_name = combo.get("name", "")
-        if product and not matched_product_code:
-            matched_product_code = product.get("code", "")
-            matched_product_name = product.get("name", "")
-
-    elif intent == "health_products":
-        reply, combo, product = orchestrate_health_answer(text, intent)
-        if combo and not matched_combo_id:
-            matched_combo_id   = combo.get("id", "")
-            matched_combo_name = combo.get("name", "")
-        if product:
-            matched_product_code = product.get("code", "")
-            matched_product_name = product.get("name", "")
-
-    elif intent == "product_info":
-        reply, combo, product = orchestrate_health_answer(text, intent)
-        if combo and not matched_combo_id:
             matched_combo_id   = combo.get("id", "")
             matched_combo_name = combo.get("name", "")
         if product:
@@ -1287,112 +1202,67 @@ def webhook():
     else:
         reply = answer_fallback()
 
-    # Mượt hóa bằng OpenAI (nếu bật)
+        # Mượt hóa bằng OpenAI (nếu bật)
     reply = polish_answer_with_ai(reply)
 
-    # Gửi lại cho TVV kèm keyboard
+    # Gửi lại cho TVV
     send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
 
-    # Log lên Google Sheets
+    # ---------------- LOG PHỤC VỤ AUTO-LEARNING ----------------
+    parsed_symptoms = parsed_for_log.get("symptoms") if parsed_for_log else []
+    parsed_goals    = parsed_for_log.get("goals") if parsed_for_log else []
+    parsed_target   = parsed_for_log.get("target") if parsed_for_log else ""
+    need_meal_plan  = bool(parsed_for_log.get("need_meal_plan")) if parsed_for_log else False
+    health_tags     = ranking_for_log.get("tags") if ranking_for_log else []
+
+    # Chuẩn bị top combos/products để log (dùng cho phân tích & auto-learning)
+    ranked_combos_list   = ranking_for_log.get("combos")   if ranking_for_log else []
+    ranked_products_list = ranking_for_log.get("products") if ranking_for_log else []
+
+    ranked_combos = [
+        {
+            "id": c.get("id"),
+            "name": c.get("name"),
+            "health_tags": c.get("health_tags", []),
+        }
+        for c in ranked_combos_list
+    ]
+
+    ranked_products = [
+        {
+            "code": p.get("code"),
+            "name": p.get("name"),
+            "health_tags": p.get("health_tags", []),
+        }
+        for p in ranked_products_list
+    ]
+
     log_payload = {
         "chat_id": chat_id,
         "user_name": user_name,
-        "text": text,
+        "text": text,             # Câu TVV gửi
+        "bot_reply": reply,       # Câu Bot trả lời (để phân tích cách trả lời)
         "intent": intent,
+
+        "parsed_symptoms": parsed_symptoms,
+        "parsed_goals": parsed_goals,
+        "parsed_target": parsed_target,
+        "need_meal_plan": need_meal_plan,
+        "health_tags": health_tags,
+
         "matched_combo_id": matched_combo_id,
         "matched_combo_name": matched_combo_name,
         "matched_product_code": matched_product_code,
         "matched_product_name": matched_product_name,
-    }
-    log_to_sheet(log_payload)
 
-    return jsonify(ok=True)
+        "ranked_combos": ranked_combos,
+        "ranked_products": ranked_products,
 
-    # ====== Bình thường: phân loại intent ======
-    intent = classify_intent(text)
-
-    matched_combo_id      = ""
-    matched_combo_name    = ""
-    matched_product_code  = ""
-    matched_product_name  = ""
-
-    # Xử lý intent
-    if intent == "start":
-        reply = answer_start()
-
-    elif intent in ("menu_combo",):
-        reply = answer_menu_combo()
-
-    elif intent in ("menu_product_search",):
-        reply = answer_menu_product_search()
-
-    elif intent in ("menu_buy_payment", "buy_payment"):
-        reply = answer_buy_payment()
-
-    elif intent in ("menu_business_escalation", "business_escalation"):
-        # Đánh dấu: tin nhắn kế tiếp sẽ là nội dung nhờ tuyến trên
-        ESCALATION_PENDING[chat_id] = True
-        reply = answer_business_escalation()
-
-    elif intent in ("menu_channels", "channels"):
-        reply = answer_channels()
-
-    elif intent == "product_by_code":
-        code = extract_code(text)
-        if code and code in PRODUCT_MAP:
-            reply = format_product_by_code(code)
-            matched_product_code = code
-            matched_product_name = PRODUCT_MAP[code].get("name", "")
-        else:
-            reply = "Em chưa tìm được mã sản phẩm này, anh/chị kiểm tra lại giúp em nhé. 🙏"
-
-    elif intent == "combo_health":
-        combo = find_combo_by_health_keyword(text)
-        if combo:
-            reply = format_combo_answer(combo)
-            matched_combo_id   = combo.get("id", "")
-            matched_combo_name = combo.get("name", "")
-        else:
-            # Nếu không tìm được combo, thử trả sản phẩm theo vấn đề sức khỏe
-            products = find_products_by_health(text)
-            reply    = format_products_answer(products)
-            if products:
-                matched_product_code = products[0].get("code", "")
-                matched_product_name = products[0].get("name", "")
-
-    elif intent == "health_products":
-        products = find_products_by_health(text)
-        reply    = format_products_answer(products)
-        if products:
-            matched_product_code = products[0].get("code", "")
-            matched_product_name = products[0].get("name", "")
-
-    elif intent == "product_info":
-        products = find_best_products(text)
-        reply    = format_products_answer(products)
-        if products:
-            matched_product_code = products[0].get("code", "")
-            matched_product_name = products[0].get("name", "")
-
-    else:
-        reply = answer_fallback()
-
-    # Mượt hóa bằng OpenAI (nếu bật)
-    reply = polish_answer_with_ai(reply)
-
-    # Gửi lại cho TVV kèm keyboard
-    send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
-
-    # Log lên Google Sheets
-    log_payload = {
-        "chat_id": chat_id,
-        "user_name": user_name,
-        "text": text,
-        "intent": intent,
-        "matched_combo_id": matched_combo_id,
-        "matched_combo_name": matched_combo_name,
-        "matched_product_code": matched_product_code,
-        "matched_product_name": matched_product_name,
+        # Auto-learning V1: không dùng final_* / feedback thủ công nữa,
+        # nhưng vẫn để sẵn nếu sau này mình muốn dùng.
+        "final_combo_id": "",
+        "final_product_code": "",
+        "feedback": "",
     }
     log_to_sheet(log_payload)
 
