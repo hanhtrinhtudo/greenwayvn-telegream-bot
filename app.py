@@ -701,7 +701,7 @@ def escalate_to_upline(chat_id, username, main_question, extra_note=None):
         msg_lines.append(main_question)
         msg_lines.append("")
     if extra_note and extra_note.strip() != (main_question or "").strip():
-        msg_lines.append("📝 <b/Ghi chú thêm của TVV:</b>")
+        msg_lines.append("📝 <b>Ghi chú thêm của TVV:</b>")
         msg_lines.append(extra_note)
         msg_lines.append("")
 
@@ -787,13 +787,13 @@ Dưới đây là nội dung cốt lõi cần truyền đạt, bạn được ph
 
 
 def handle_user_message(chat_id, text, username=None, msg_id=None):
+    """
+    Hàm trung tâm xử lý tin nhắn từ TVV.
+    """
     global LAST_USER_TEXT
     chat_key = str(chat_id)
     previous_text = LAST_USER_TEXT.get(chat_key)
-    """
-    Hàm trung tâm xử lý tin nhắn từ TVV.
-    Giữ nguyên logic cũ, chỉ thêm bước áp synonyms + health_tags_map.
-    """
+
     intent_info = classify_intent_with_openai(text)
     intent = intent_info.get("intent", "SMALL_TALK")
     health_issue = intent_info.get("health_issue")
@@ -853,24 +853,27 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
 
     elif intent == "HOW_TO_BUY":
         reply_text_core = format_faq_reply(faq_buy_data)
+
     elif intent == "HOW_TO_PAY":
         reply_text_core = format_faq_reply(faq_payment_data)
+
     elif intent == "NAVIGATION":
         reply_text_core = format_navigation_reply()
+
     elif intent == "BUSINESS_QUESTION":
-    faq_answer = match_business_faq(text)
-    if faq_answer:
-        reply_text_core = faq_answer
-    else:
-        ask_upline = True
-        # Nếu TVV vừa nói "kết nối tuyến trên", thì previous_text mới là câu hỏi chính
-        main_question = previous_text or text
-        reply_text_core = escalate_to_upline(
-            chat_id=chat_id,
-            username=username,
-            main_question=main_question,
-            extra_note=text if previous_text and text != previous_text else None,
-        )
+        faq_answer = match_business_faq(text)
+        if faq_answer:
+            reply_text_core = faq_answer
+        else:
+            ask_upline = True
+            # Nếu TVV vừa nói "kết nối tuyến trên", thì previous_text mới là câu hỏi chính
+            main_question = previous_text or text
+            reply_text_core = escalate_to_upline(
+                chat_id=chat_id,
+                username=username,
+                main_question=main_question,
+                extra_note=text if previous_text and text != previous_text else None,
+            )
     else:
         # SMALL_TALK hoặc không rõ
         reply_text_core = (
@@ -891,6 +894,7 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
     final_reply = build_ai_style_reply(text, reply_text_core)
 
     send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
     # Cập nhật câu hỏi gần nhất của TVV
     LAST_USER_TEXT[chat_key] = text
 
@@ -953,5 +957,3 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
-
-
