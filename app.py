@@ -102,16 +102,22 @@ def normalize_text(text: str) -> str:
     text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
     return text
 
-def strip_stars(text: str) -> str:
+def strip_markdown(text: str) -> str:
     """
-    Xoá các dấu ** trong dữ liệu (từ file JSON) để tránh hiển thị kiểu **COMBO**.
-    Giữ nguyên các ký tự khác.
+    Loại bỏ các ký hiệu markdown đơn giản như **bold**, *italic* trong chuỗi.
+    Không động vào thẻ HTML (<b>...</b>) mà Telegram đang dùng.
     """
     if not isinstance(text, str):
         return text
-    # bỏ tất cả dấu *
-    cleaned = text.replace("*", "")
-    return cleaned.strip()
+
+    # Bỏ **TEXT**
+    text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
+    # Bỏ *TEXT*
+    text = re.sub(r"\*(.*?)\*", r"\1", text)
+    # Bỏ các dấu * lẻ còn sót
+    text = text.replace("*", "")
+
+    return text.strip()
 
 def text_contains(text: str, keyword: str) -> bool:
     return normalize_text(keyword) in normalize_text(text)
@@ -332,13 +338,25 @@ def classify_intent_with_openai(user_text: str) -> dict:
         # Nếu không có OpenAI thì fallback keyword đơn giản
         t_raw = apply_synonyms(user_text or "")
         t = normalize_text(t_raw)
-        if any(k in t for k in ["tieu duong", "đai thao duong"]):
+
+        # Gặp tuyến trên
+        if any(k in t for k in [
+            "ket noi tuyen tren",
+            "gap tuyen tren",
+            "muon noi voi tuyen tren",
+            "chuyen cho tuyen tren"
+        ]):
+            base_result["intent"] = "BUSINESS_QUESTION"
+            base_result["ask_upline"] = True
+            return base_result
+
+        if any(k in t for k in ["tieu duong", "dai thao duong"]):
             base_result["intent"] = "HEALTH_COMBO"
             base_result["health_issue"] = "tiểu đường"
         elif any(k in t for k in ["da day", "dạ dày", "bao tu", "bao tử", "trao nguoc"]):
             base_result["intent"] = "HEALTH_PRODUCT"
             base_result["health_issue"] = "đau dạ dày / dạ dày"
-        elif any(k in t for k in ["mua hang", "dat hang", "đặt hàng", "mua như the nao", "mua như thế nào"]):
+        elif any(k in t for k in ["mua hang", "dat hang", "đặt hàng", "mua nhu the nao", "mua như thế nào"]):
             base_result["intent"] = "HOW_TO_BUY"
         elif any(k in t for k in ["thanh toan", "thanh toán", "chuyen khoan", "chuyển khoản"]):
             base_result["intent"] = "HOW_TO_PAY"
@@ -361,6 +379,12 @@ Các INTENT chính:
 - BUSINESS_QUESTION: Hỏi về chính sách kinh doanh, hoa hồng, chiết khấu, thưởng, quy định nội bộ.
 - NAVIGATION: Hỏi xin link fanpage, kênh telegram, website, group chính thức.
 - SMALL_TALK: Chào hỏi, cảm ơn, câu chuyện chung chung.
+- Nếu TVV nói các câu như: "kết nối tuyến trên", "anh muốn gặp tuyến trên", 
+  "nhờ tuyến trên trả lời giúp", "chuyển câu này cho tuyến trên", 
+  thì:
+  + intent = "BUSINESS_QUESTION"
+  + ask_upline = true
+  + health_issue có thể để null
 
 Trường "needs" là danh sách các nhu cầu cụ thể trong cùng 1 câu:
 - "combo": cần tên combo
@@ -432,8 +456,9 @@ def format_combo_reply(combo, needs, health_issue):
     combo_url = combo.get("combo_url", "")
     products = combo.get("products", [])
 
-    name = strip_stars(raw_name)
-    header_text = strip_stars(raw_header_text)
+    name = strip_markdown(raw_name)
+    header_text = strip_markdown(raw_header_text)
+    duration_text = strip_markdown(duration_text)
 
     lines = []
 
@@ -449,7 +474,7 @@ def format_combo_reply(combo, needs, health_issue):
         for idx, p in enumerate(products, start=1):
             # Tên từ combo
             pname_combo = p.get("name") or p.get("product_name") or p.get("product_code") or "Sản phẩm"
-            pname_combo = strip_stars(pname_combo)
+            pname_combo = strip_markdown(pname_combo)
 
             # Tìm sản phẩm tương ứng trong products_list
             product_detail = None
@@ -459,12 +484,12 @@ def format_combo_reply(combo, needs, health_issue):
                     product_detail = prod
                     break
 
-            price_text = strip_stars(product_detail.get("price_text", "")) if product_detail else ""
-            usage = strip_stars(product_detail.get("usage_text", "")) if product_detail else ""
+            price_text = strip_markdown(product_detail.get("price_text", "")) if product_detail else ""
+            usage = strip_markdown(product_detail.get("usage_text", "")) if product_detail else ""
             product_url = (product_detail.get("product_url", "") or "").strip() if product_detail else ""
 
-            role_text = strip_stars(p.get("role_text", "")) if p.get("role_text") else ""
-            dose_text = strip_stars(p.get("dose_text", "")) if p.get("dose_text") else ""
+            role_text = strip_markdown(p.get("role_text", "")) if p.get("role_text") else ""
+            dose_text = strip_markdown(p.get("dose_text", "")) if p.get("dose_text") else ""
 
             # ===== Format block cho từng sản phẩm =====
             block_lines = []
@@ -500,8 +525,7 @@ def format_combo_reply(combo, needs, health_issue):
 
     # ⭐ Thời gian dùng combo
     if duration_text:
-        duration_clean = strip_stars(duration_text)
-        lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_clean}")
+        lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_text}")
 
     # ⭐ Link combo (nếu có)
     if combo_url:
@@ -525,15 +549,15 @@ def format_product_reply(product, needs, health_issue=None):
             )
         return "Em chưa tìm thấy sản phẩm phù hợp trong dữ liệu. Anh/chị kiểm tra lại tên hoặc mã sản phẩm giúp em nhé."
 
-    name = product.get("name", "Sản phẩm")
-    code = product.get("code", "")
-    ingredients = product.get("ingredients_text", "")
-    benefits = product.get("benefits_text", "")
-    usage = product.get("usage_text", "")
-    price_text = product.get("price_text", "")
-    duration_text = product.get("duration_text", "")  # có thể chưa có trong file, không sao
-    product_url = product.get("product_url", "")
-    warnings = product.get("notes_for_tvv", "")
+    name = strip_markdown(product.get("name", "Sản phẩm"))
+    code = strip_markdown(product.get("code", ""))
+    ingredients = strip_markdown(product.get("ingredients_text", ""))
+    benefits = strip_markdown(product.get("benefits_text", ""))
+    usage = strip_markdown(product.get("usage_text", ""))
+    price_text = strip_markdown(product.get("price_text", ""))
+    duration_text = strip_markdown(product.get("duration_text", ""))  # có thể chưa có trong file, không sao
+    product_url = (product.get("product_url", "") or "").strip()
+    warnings = strip_markdown(product.get("notes_for_tvv", ""))
 
     lines = []
     title = f"<b>{name}</b>"
@@ -605,8 +629,8 @@ def format_faq_reply(faq_list, key_field="title"):
         if isinstance(item, str):
             lines.append(item)
         elif isinstance(item, dict):
-            title = item.get(key_field, f"Bước {i}")
-            content = item.get("content", "")
+            title = strip_markdown(item.get(key_field, f"Bước {i}"))
+            content = strip_markdown(item.get("content", ""))
             line = f"{i}. <b>{title}</b>"
             if content:
                 line += f"\n   {content}"
@@ -763,9 +787,9 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
                 # Nhiều sản phẩm, liệt kê gợi ý
                 lines = [f"<b>Một số sản phẩm phù hợp với vấn đề {health_issue or text}:</b>"]
                 for p in products:
-                    name = p.get("name", "Sản phẩm")
-                    code = p.get("code", "")
-                    url = p.get("product_url", "")
+                    name = strip_markdown(p.get("name", "Sản phẩm"))
+                    code = strip_markdown(p.get("code", ""))
+                    url = (p.get("product_url", "") or "").strip()
                     line = f"• {name}"
                     if code:
                         line += f" (Mã: {code})"
@@ -875,5 +899,3 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
-
-
