@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Thanh toán khi nhận hàng (COD)",
+    "content": "Khách thanh toán trực tiếp cho đơn vị vận chuyển khi nhận hàng. TVV cần nhắc khách chuẩn bị đủ tiền mặt hoặc phương thức thanh toán mà đơn vị giao hàng hỗ trợ."
+  },
+  {
+    "title": "Thanh toán chuyển khoản",
+    "content": "TVV gửi đúng số tài khoản, tên chủ tài khoản và nội dung chuyển khoản theo quy định của công ty. Nhắc khách chụp lại màn hình chuyển khoản để đối chiếu khi cần."
+  },
+  {
+    "title": "Xử lý khi khách đã chuyển khoản",
+    "content": "Sau khi khách chuyển khoản, TVV xác nhận lại với bộ phận phụ trách (kế toán/kho) và thông báo thời gian dự kiến giao hàng cho khách."
+  },
+  {
+    "title": "Lưu ý chung",
+    "content": "TVV không sử dụng tài khoản cá nhân để nhận tiền nếu không có quy định riêng của công ty. Mọi thay đổi về hình thức thanh toán cần tuân thủ thông báo mới nhất từ công ty."
+  }
+]

@@ -1,0 +1,20 @@
+{
+  "medical_warnings": true,
+  "no_medical_claims": true,
+  "no_diagnosis": true,
+  "force_upline_for": [
+    "khiếu nại",
+    "bồi hoàn",
+    "đòi bồi thường",
+    "tranh chấp",
+    "tố cáo",
+    "vụ việc pháp lý",
+    "tai biến nghi do sản phẩm"
+  ],
+  "general_guidelines": [
+    "Luôn nhắc đây là thực phẩm bảo vệ sức khỏe/hỗ trợ, không phải thuốc, không thay thế thuốc điều trị.",
+    "Không được khẳng định sản phẩm chữa khỏi bệnh hoặc thay thế phác đồ của bác sĩ.",
+    "Khi khách đang có bệnh nền nặng, đang mang thai, cho con bú hoặc dùng nhiều thuốc, luôn khuyến nghị hỏi ý kiến bác sĩ.",
+    "Các vấn đề liên quan đến bồi hoàn, đền bù, khiếu nại nghiêm trọng phải chuyển cho tuyến trên xử lý."
+  ]
+}

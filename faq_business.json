@@ -1,0 +1,22 @@
+[
+  {
+    "q_keywords": ["hoa hồng", "tỷ lệ"],
+    "answer": "Về tỷ lệ hoa hồng và chính sách thưởng hiện hành, anh/chị TVV vui lòng xem tài liệu chính sách mới nhất của công ty hoặc liên hệ tuyến trên để được cập nhật chính xác. Chính sách có thể thay đổi theo thời gian nên Bot không khẳng định con số cụ thể."
+  },
+  {
+    "q_keywords": ["chính sách", "đổi trả"],
+    "answer": "Về nguyên tắc, công ty luôn ưu tiên bảo vệ quyền lợi chính đáng của khách hàng theo chính sách đổi trả hiện hành. Anh/chị TVV cần xem đúng quy định được ban hành (thời gian áp dụng, điều kiện đổi trả) hoặc hỏi tuyến trên trước khi cam kết với khách."
+  },
+  {
+    "q_keywords": ["khiếu nại", "xử lý"],
+    "answer": "Với các trường hợp khiếu nại, anh/chị TVV nên ghi nhận đầy đủ thông tin (họ tên khách, số điện thoại, mã đơn, nội dung khiếu nại) và báo ngay cho tuyến trên/bộ phận CSKH để xử lý theo quy trình. Không tự hứa hẹn bồi hoàn hoặc ưu đãi ngoài chính sách."
+  },
+  {
+    "q_keywords": ["thưởng", "tháng"],
+    "answer": "Chính sách thưởng theo tháng/quý/năm thường được công ty thông báo riêng cho hệ thống TVV. Anh/chị vui lòng xem thông báo nội bộ mới nhất hoặc hỏi trực tiếp tuyến trên để có thông tin chính xác và đầy đủ."
+  },
+  {
+    "q_keywords": ["quyền lợi", "tuyến dưới"],
+    "answer": "Quyền lợi khi phát triển tuyến dưới (TVV, cộng tác viên) được quy định rõ trong tài liệu chính sách phát triển hệ thống. Anh/chị nên đọc kỹ hoặc trao đổi với tuyến trên để hiểu rõ mức hoa hồng, điều kiện xét thưởng và trách nhiệm kèm theo."
+  }
+]
