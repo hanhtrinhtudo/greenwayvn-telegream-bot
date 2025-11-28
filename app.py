@@ -95,6 +95,7 @@ if HEALTH_TAGS_INFO:
         if _lbl:
             HEALTH_TAG_LABELS[_tag] = _lbl
 
+
 def build_usecase_from_tags(tags):
     labels = []
     for t in tags or []:
@@ -102,6 +103,7 @@ def build_usecase_from_tags(tags):
         if lbl and lbl not in labels:
             labels.append(lbl)
     return "; ".join(labels)
+
 
 # ---------- Helper: kiểm tra hết hàng ----------
 def is_product_out_of_stock(p: dict) -> bool:
@@ -114,6 +116,7 @@ def is_product_out_of_stock(p: dict) -> bool:
         return not p["in_stock"]
     url = (p.get("product_url") or p.get("url") or "").strip()
     return url == ""
+
 
 # ---------- Helper chuẩn hóa & health tags ----------
 
@@ -129,52 +132,6 @@ def normalize_for_match(s: str) -> str:
     s = re.sub(r"\s+", " ", s).strip()
     return s
 
-def is_negative_feedback(text: str) -> bool:
-    """TVV chê câu trả lời trước là sai / không hợp lý."""
-    t = (text or "").lower()
-    return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
-import re
-
-def detect_user_tone(text: str) -> str | None:
-    """
-    Đoán style xưng hô từ câu của người dùng.
-    Trả về: 'anh_em', 'chi_em', 'ban_minh' hoặc None.
-    """
-    t = (text or "").lower()
-
-    # Ưu tiên 'bạn – mình'
-    if "bạn" in t or "ban oi" in t:
-        return "ban_minh"
-
-    # 'anh – em'
-    if re.search(r"\banh\b", t) and "em" in t:
-        return "anh_em"
-
-    # 'chị – em'
-    if re.search(r"\bchị\b", t) or "chi" in t:
-        if "em" in t:
-            return "chi_em"
-
-    return None
-
-
-def get_pronouns_for_chat(chat_id: int) -> tuple[str, str]:
-    """
-    Lấy cách xưng hô phù hợp cho chat này.
-    you_pronoun = người dùng, me_pronoun = Bot.
-    """
-    ctx = CHAT_CONTEXT.get(chat_id, {})
-    tone = ctx.get("tone", "default")
-
-    if tone == "ban_minh":
-        return "bạn", "mình"
-    if tone == "anh_em":
-        return "anh", "em"
-    if tone == "chi_em":
-        return "chị", "em"
-
-    # Mặc định
-    return "anh/chị", "em"
 
 # Map keyword → health_tag (không phụ thuộc dữ liệu, anh có thể bổ sung dần)
 _HEALTH_KEYWORD_TO_TAG_RAW = {
@@ -240,6 +197,7 @@ if isinstance(SYMPTOMS_MAP_RAW, dict):
         if key_norm and tags:
             SYMPTOMS_MAP_NORM[key_norm] = tags
 
+
 def extract_health_tags_from_text(text: str):
     """Trích health_tags từ câu mô tả triệu chứng/bệnh lý."""
     nt = normalize_for_match(text)
@@ -258,6 +216,7 @@ def extract_health_tags_from_text(text: str):
             tags.add(tag)
 
     return tags
+
 
 def build_product_aliases(p: dict):
     """Sinh thêm alias từ name + code + aliases gốc."""
@@ -288,6 +247,7 @@ def build_product_aliases(p: dict):
 
     p["aliases"] = aliases_clean
 
+
 def build_combo_aliases(c: dict):
     aliases = set()
     name = c.get("name", "")
@@ -305,6 +265,7 @@ def build_combo_aliases(c: dict):
         if a2:
             aliases_clean.append(a2)
     c["aliases"] = aliases_clean
+
 
 # ---------- Build PRODUCTS + alias index + health_tags ----------
 
@@ -388,6 +349,7 @@ for c in COMBOS:
             continue
         COMBO_ALIAS_INDEX.setdefault(na, []).append(c)
 
+
 # ============== Telegram Keyboard ==============
 MAIN_KEYBOARD = {
     "keyboard": [
@@ -425,7 +387,47 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="Markdown"):
         requests.post(url, data=payload, timeout=10)
     except Exception as e:
         print("Error sending message:", e)
-import re
+
+
+# ============== NLP helper: phản hồi & chỉnh sản phẩm + xưng hô ==============
+
+NEGATIVE_FEEDBACK_KEYWORDS = [
+    "sai rồi", "sai roi",
+    "không đúng", "khong dung",
+    "không phải", "khong phai",
+    "nhầm rồi", "nham roi",
+    "ko đúng", "ko dung",
+    "ko phải", "ko phai",
+    "chưa đúng", "chua dung",
+    "tư vấn sai", "tu van sai",
+    "sai combo", "sai sản phẩm", "sai san pham",
+    "không liên quan", "khong lien quan",
+]
+
+CORRECTION_KEYWORDS = [
+    "phải là", "phai la",
+    "đúng là", "dung la",
+    "riêng sản phẩm", "rieng san pham",
+    "dùng sản phẩm", "dung san pham",
+    "cho anh sản phẩm", "cho em sản phẩm",
+    "sản phẩm này", "san pham nay",
+]
+
+
+def is_negative_feedback(text: str) -> bool:
+    """TVV đang chê câu trả lời trước: sai / không đúng / không liên quan."""
+    t = (text or "").lower()
+    return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
+
+
+def seems_like_product_correction(text: str) -> bool:
+    """
+    TVV đang yêu cầu/đính chính 1 *sản phẩm cụ thể* (Element Curcumin, Digestorium...),
+    thường có cụm 'phải là', 'đúng là', 'sản phẩm ...'.
+    """
+    t = (text or "").lower().strip()
+    return any(kw in t for kw in CORRECTION_KEYWORDS)
+
 
 def detect_user_tone(text: str) -> str | None:
     """
@@ -467,45 +469,7 @@ def get_pronouns_for_chat(chat_id: int) -> tuple[str, str]:
 
     # Mặc định
     return "anh/chị", "em"
-# ============== Helper: utility ==============
-def contains_any(text, keywords):
-    text = text.lower()
-    return any(k.lower() in text for k in keywords)
-# ==== NLP helper: phản hồi & chỉnh sản phẩm ====
 
-NEGATIVE_FEEDBACK_KEYWORDS = [
-    "sai rồi", "sai roi",
-    "không đúng", "khong dung",
-    "không phải", "khong phai",
-    "nhầm rồi", "nham roi",
-    "ko đúng", "ko dung",
-    "ko phải", "ko phai",
-    "chưa đúng", "chua dung",
-    "tư vấn sai", "tu van sai",
-    "sai combo", "sai sản phẩm", "sai san pham",
-    "không liên quan", "khong lien quan",
-]
-
-CORRECTION_KEYWORDS = [
-    "phải là", "phai la",
-    "đúng là", "dung la",
-    "riêng sản phẩm", "rieng san pham",
-    "dùng sản phẩm", "dung san pham",
-    "cho anh sản phẩm", "cho em sản phẩm",
-]
-
-def is_negative_feedback(text: str) -> bool:
-    """TVV đang chê câu trả lời trước: sai / không đúng / không liên quan."""
-    t = (text or "").lower()
-    return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
-
-def seems_like_product_correction(text: str) -> bool:
-    """
-    TVV đang yêu cầu/đính chính 1 *sản phẩm cụ thể* (Element Curcumin, Digestorium...),
-    thường có cụm 'phải là', 'đúng là', 'sản phẩm ...'.
-    """
-    t = (text or "").lower()
-    return any(kw in t for kw in CORRECTION_KEYWORDS)
 
 def update_chat_context(chat_id, **kwargs):
     """Cập nhật bộ nhớ ngắn hạn cho 1 TVV."""
@@ -514,11 +478,19 @@ def update_chat_context(chat_id, **kwargs):
     CHAT_CONTEXT[chat_id] = ctx
     return ctx
 
+
+# ============== Helper: utility tìm kiếm ==============
+def contains_any(text, keywords):
+    text = text.lower()
+    return any(k.lower() in text for k in keywords)
+
+
 def extract_code(text: str):
     """Bắt mã sản phẩm dạng 0xxxxx."""
     text = text.strip()
     codes = re.findall(r"\b0\d{4,5}\b", text)
     return codes[0] if codes else None
+
 
 def find_best_products(text: str, limit: int = 5):
     """Tìm sản phẩm theo alias (name, mã, alias mở rộng)."""
@@ -548,6 +520,7 @@ def find_best_products(text: str, limit: int = 5):
 
     return results
 
+
 def find_products_by_health(text: str, limit: int = 5):
     """Tìm sản phẩm theo health_tags (từ JSON) + từ khóa trong câu."""
     tags_from_text = extract_health_tags_from_text(text)
@@ -570,6 +543,7 @@ def find_products_by_health(text: str, limit: int = 5):
 
     return results
 
+
 def find_best_combo(text: str, limit: int = 3):
     t = normalize_for_match(text)
     results = []
@@ -585,6 +559,7 @@ def find_best_combo(text: str, limit: int = 3):
                     if len(results) >= limit:
                         return results
     return results
+
 
 def find_combo_by_health_keyword(text: str) -> dict | None:
     tags_from_text = extract_health_tags_from_text(text)
@@ -607,6 +582,7 @@ def find_combo_by_health_keyword(text: str) -> dict | None:
         best = combos[0] if combos else None
 
     return best
+
 
 # ============== Orchestrator: phân tích câu hỏi & gợi ý combo/sản phẩm ==============
 
@@ -784,19 +760,23 @@ def orchestrate_health_answer(text: str, intent: str):
                 reply = format_products_answer(products_old)
 
     elif intent == "health_products":
+        products_hp = find_products_by_health(text)
+        if products_hp:
+            matched_product = products_hp[0]
+        reply = format_products_answer(products_hp)
+
+    elif intent == "product_info":
         if products:
             matched_product = products[0]
             reply = format_products_answer(products)
-        elif combos:
-            matched_combo = combos[0]
-            reply = format_combo_answer(matched_combo)
         else:
-            products_old = find_products_by_health(text)
+            products_old = find_best_products(text)
             if products_old:
                 matched_product = products_old[0]
             reply = format_products_answer(products_old)
 
-    elif intent == "product_info":
+    else:
+        # fallback: xem như hỏi thông tin sản phẩm
         if products:
             matched_product = products[0]
             reply = format_products_answer(products)
@@ -811,6 +791,7 @@ def orchestrate_health_answer(text: str, intent: str):
         reply = f"{reply}{meal_plan}"
 
     return reply, matched_combo, matched_product, parsed, ranking
+
 
 # ============== AI: phân loại intent ==============
 INTENT_LABELS = [
@@ -828,8 +809,9 @@ INTENT_LABELS = [
     "menu_buy_payment",
     "menu_business_escalation",
     "menu_channels",
-    "fallback"
+    "fallback",
 ]
+
 
 def classify_intent_ai(text: str):
     if not client:
@@ -858,10 +840,10 @@ def classify_intent_ai(text: str):
                         "- menu_* : when pressing menu buttons with those meanings\n"
                         "- fallback: anything else\n"
                         "Answer with ONLY the label, no explanation."
-                    )
+                    ),
                 },
-                {"role": "user", "content": text}
-            ]
+                {"role": "user", "content": text},
+            ],
         )
         label = resp.choices[0].message.content.strip().lower()
         if label in INTENT_LABELS:
@@ -869,6 +851,7 @@ def classify_intent_ai(text: str):
     except Exception as e:
         print("Error classify_intent_ai:", e)
     return None
+
 
 def classify_intent_rules(text: str):
     t = text.lower().strip()
@@ -906,25 +889,29 @@ def classify_intent_rules(text: str):
         "cơ xương khớp", "đau khớp", "gout",
         "huyết áp", "tim mạch",
         "gan", "men gan", "gan nhiễm mỡ",
-        "tiêu hóa", "rối loạn tiêu hóa", "táo bón"
+        "tiêu hóa", "rối loạn tiêu hóa", "táo bón",
     ]):
         return "combo_health"
 
+    # Hỏi cụ thể về sản phẩm (theo tên / info)
     if contains_any(t, ["thành phần", "tác dụng", "lợi ích", "cách dùng", "công dụng", "uống như thế nào"]):
         return "product_info"
 
-    if find_best_combo(t):
+    # Thử match combo / sản phẩm theo alias
+    if find_best_combo(t) is not None:
         return "combo_health"
     if find_best_products(t):
         return "product_info"
 
     return "fallback"
 
+
 def classify_intent(text: str):
     label = classify_intent_ai(text)
     if label:
         return label
     return classify_intent_rules(text)
+
 
 # ============== AI: mượt hóa câu trả lời ==============
 def polish_answer_with_ai(answer: str) -> str:
@@ -944,14 +931,15 @@ def polish_answer_with_ai(answer: str) -> str:
             temperature=0.4,
             messages=[
                 {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": answer}
-            ]
+                {"role": "user", "content": answer},
+            ],
         )
         new_answer = resp.choices[0].message.content.strip()
         return new_answer or answer
     except Exception as e:
         print("Error polish_answer_with_ai:", e)
         return answer
+
 
 # ============== Format trả lời ==============
 def format_combo_answer(combo):
@@ -1017,6 +1005,7 @@ def format_combo_answer(combo):
 
     return "\n".join(lines)
 
+
 def format_products_answer(products):
     if not products:
         return (
@@ -1060,6 +1049,7 @@ def format_products_answer(products):
     )
     return "\n".join(lines)
 
+
 def format_product_by_code(code: str):
     p = PRODUCT_MAP.get(code)
     if not p:
@@ -1095,6 +1085,7 @@ def format_product_by_code(code: str):
     )
     return "\n".join(lines)
 
+
 # ============== Các câu menu / cố định ==============
 def answer_start():
     return (
@@ -1107,6 +1098,7 @@ def answer_start():
         "Hoặc bấm các nút menu bên dưới để thao tác nhanh. ❤️"
     )
 
+
 def answer_menu_combo():
     return (
         "🧩 *Combo theo vấn đề sức khỏe*\n\n"
@@ -1116,6 +1108,7 @@ def answer_menu_combo():
         "- \"Khách bị *huyết áp, tim mạch* thì nên dùng gì?\""
     )
 
+
 def answer_menu_product_search():
     return (
         "🔎 *Tra cứu sản phẩm*\n\n"
@@ -1124,6 +1117,7 @@ def answer_menu_product_search():
         "- \"Thành phần, cách dùng của mã *070728* là gì?\"\n"
         "- \"Sản phẩm nào hỗ trợ *tiểu đường / men gan / xương khớp*?\""
     )
+
 
 def answer_buy_payment():
     lines = []
@@ -1144,6 +1138,7 @@ def answer_buy_payment():
     lines.append("- 📱 Thanh toán online (QR, ví điện tử…) nếu có.")
     return "\n".join(lines)
 
+
 def answer_business_escalation():
     return (
         "*Kết nối tuyến trên khi gặp câu hỏi khó* ☎️\n\n"
@@ -1155,6 +1150,7 @@ def answer_business_escalation():
         f"Nếu thật sự gấp, anh/chị có thể gọi thêm Hotline: *{HOTLINE_TUYEN_TREN}*."
     )
 
+
 def answer_channels():
     return (
         "*Kênh & Fanpage chính thức của công ty* 📢\n\n"
@@ -1163,6 +1159,7 @@ def answer_channels():
         f"- 🌐 Website: {LINK_WEBSITE}\n\n"
         "👉 TVV nên ưu tiên gửi khách các đường link chính thức này."
     )
+
 
 def answer_fallback():
     return (
@@ -1174,6 +1171,7 @@ def answer_fallback():
         "- Bấm nút *Kết nối tuyến trên* để em hướng dẫn liên hệ leader."
     )
 
+
 # ============== Logging lên Google Sheets ==============
 def log_to_sheet(payload: dict):
     if not LOG_SHEET_WEBHOOK_URL:
@@ -1182,6 +1180,7 @@ def log_to_sheet(payload: dict):
         requests.post(LOG_SHEET_WEBHOOK_URL, json=payload, timeout=5)
     except Exception as e:
         print("Error log_to_sheet:", e)
+
 
 # ============== Webhook chính ==============
 @app.route("/webhook", methods=["POST"])
@@ -1234,12 +1233,11 @@ def webhook():
             log_to_sheet(log_payload)
 
         return jsonify(ok=True)
-        
+
     # Cập nhật style xưng hô theo câu hiện tại (nếu đoán được)
     tone = detect_user_tone(text)
     if tone:
         update_chat_context(chat_id, tone=tone)
-
     you, me = get_pronouns_for_chat(chat_id)
 
     # ===== Tin nhắn từ TVV =====
@@ -1283,12 +1281,10 @@ def webhook():
         log_to_sheet(log_payload)
 
         return jsonify(ok=True)
-    
-    you, me = get_pronouns_for_chat(chat_id)
-    ctx = CHAT_CONTEXT.get(chat_id, {})
 
-    # 1) TVV chê câu trả lời trước là sai
+    # ===== Nếu đây là phản hồi chê sai → xin combo/sản phẩm chuẩn để học =====
     if is_negative_feedback(text):
+        ctx = CHAT_CONTEXT.get(chat_id, {})
         last_combo_name   = ctx.get("last_matched_combo_name") or ""
         last_product_name = ctx.get("last_matched_product_name") or ""
 
@@ -1311,6 +1307,7 @@ def webhook():
         reply = polish_answer_with_ai(reply)
         send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
 
+        # Cập nhật context: biết đây là 1 feedback negative
         update_chat_context(
             chat_id,
             last_intent="user_feedback_negative",
@@ -1318,24 +1315,33 @@ def webhook():
             last_reply=reply,
         )
 
+        # Log riêng để auto-learning nhận diện feedback negative
         log_payload = {
             "chat_id": chat_id,
             "user_name": user_name,
             "text": text,
+            "bot_reply": reply,
             "intent": "user_feedback_negative",
-            "matched_combo_id": ctx.get("last_matched_combo_id", ""),
-            "matched_combo_name": ctx.get("last_matched_combo_name", ""),
-            "matched_product_code": ctx.get("last_matched_product_code", ""),
-            "matched_product_name": ctx.get("last_matched_product_name", ""),
+            "parsed_symptoms": [],
+            "parsed_goals": [],
+            "parsed_target": "",
+            "need_meal_plan": False,
+            "health_tags": [],
+            "matched_combo_id": "",
+            "matched_combo_name": "",
+            "matched_product_code": "",
+            "matched_product_name": "",
+            "ranked_combos": [],
+            "ranked_products": [],
+            "final_combo_id": "",
+            "final_product_code": "",
+            "feedback": "",
         }
         log_to_sheet(log_payload)
-
         return jsonify(ok=True)
-
 
     # 2) TVV chỉnh lại: phải là 1 *sản phẩm cụ thể* (Element Curcumin…)
     if seems_like_product_correction(text):
-        # Thử tìm sản phẩm theo alias trong câu
         products = find_best_products(text, limit=3)
         if products:
             main_product = products[0]  # ưu tiên 1 sản phẩm rõ nhất
@@ -1437,7 +1443,6 @@ def webhook():
     need_meal_plan  = bool(parsed_for_log.get("need_meal_plan")) if parsed_for_log else False
     health_tags     = ranking_for_log.get("tags") if ranking_for_log else []
 
-    # Chuẩn bị top combos/products để log (dùng cho phân tích & auto-learning)
     ranked_combos_list   = ranking_for_log.get("combos")   if ranking_for_log else []
     ranked_products_list = ranking_for_log.get("products") if ranking_for_log else []
 
@@ -1458,6 +1463,7 @@ def webhook():
         }
         for p in ranked_products_list
     ]
+
     # Cập nhật bộ nhớ ngắn hạn cho cuộc hội thoại này
     update_chat_context(
         chat_id,
@@ -1491,8 +1497,7 @@ def webhook():
         "ranked_combos": ranked_combos,
         "ranked_products": ranked_products,
 
-        # Auto-learning V1: không dùng final_* / feedback thủ công nữa,
-        # nhưng vẫn để sẵn nếu sau này mình muốn dùng.
+        # Auto-learning V1: để sẵn nếu sau này mình muốn dùng.
         "final_combo_id": "",
         "final_product_code": "",
         "feedback": "",
@@ -1501,11 +1506,11 @@ def webhook():
 
     return jsonify(ok=True)
 
+
 @app.route("/healthz", methods=["GET"])
 def healthz():
     return "ok", 200
 
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
-
-
