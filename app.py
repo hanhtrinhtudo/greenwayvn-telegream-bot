@@ -102,6 +102,17 @@ def normalize_text(text: str) -> str:
     text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
     return text
 
+def strip_stars(text: str) -> str:
+    """
+    Xoá các dấu ** trong dữ liệu (từ file JSON) để tránh hiển thị kiểu **COMBO**.
+    Giữ nguyên các ký tự khác.
+    """
+    if not isinstance(text, str):
+        return text
+    # bỏ tất cả dấu *
+    cleaned = text.replace("*", "")
+    return cleaned.strip()
+
 def text_contains(text: str, keyword: str) -> bool:
     return normalize_text(keyword) in normalize_text(text)
 
@@ -414,11 +425,15 @@ def format_combo_reply(combo, needs, health_issue):
             "Anh/chị mô tả rõ hơn tình trạng sức khoẻ để em hỗ trợ chính xác hơn nhé."
         )
 
-    name = combo.get("name", "Combo phù hợp")
-    header_text = combo.get("header_text", "")
+    # ===== Lấy & làm sạch thông tin combo =====
+    raw_name = combo.get("name", "Combo phù hợp")
+    raw_header_text = combo.get("header_text", "")
     duration_text = combo.get("duration_text", "")
     combo_url = combo.get("combo_url", "")
     products = combo.get("products", [])
+
+    name = strip_stars(raw_name)
+    header_text = strip_stars(raw_header_text)
 
     lines = []
 
@@ -427,71 +442,79 @@ def format_combo_reply(combo, needs, health_issue):
     if header_text:
         lines.append(f"📌 {header_text}")
 
-    # ⭐ Danh sách sản phẩm
+    # ⭐ Danh sách sản phẩm trong combo
     if products:
         lines.append("\n🧩 <b>Các sản phẩm trong combo:</b>")
 
         for idx, p in enumerate(products, start=1):
-            pname = (
-                p.get("name")
-                or p.get("product_name")
-                or p.get("product_code")
-            ) or "Sản phẩm"
+            # Tên từ combo
+            pname_combo = p.get("name") or p.get("product_name") or p.get("product_code") or "Sản phẩm"
+            pname_combo = strip_stars(pname_combo)
 
-            # Lấy thông tin sản phẩm từ products.json
+            # Tìm sản phẩm tương ứng trong products_list
             product_detail = None
             for prod in products_list:
-                if normalize_text(prod.get("name","")) == normalize_text(pname) or \
-                   normalize_text(prod.get("code","")) == normalize_text(p.get("code","")):
+                if normalize_text(prod.get("name", "")) == normalize_text(pname_combo) or \
+                   normalize_text(prod.get("code", "")) == normalize_text(p.get("code", "")):
                     product_detail = prod
                     break
 
-            price_text = product_detail.get("price_text", "") if product_detail else ""
-            usage = product_detail.get("usage_text", "") if product_detail else ""
-            product_url = product_detail.get("product_url", "") if product_detail else ""
+            price_text = strip_stars(product_detail.get("price_text", "")) if product_detail else ""
+            usage = strip_stars(product_detail.get("usage_text", "")) if product_detail else ""
+            product_url = (product_detail.get("product_url", "") or "").strip() if product_detail else ""
 
-            role_text = p.get("role_text", "")
-            dose_text = p.get("dose_text", "")
+            role_text = strip_stars(p.get("role_text", "")) if p.get("role_text") else ""
+            dose_text = strip_stars(p.get("dose_text", "")) if p.get("dose_text") else ""
 
-            # Format 1 sản phẩm
-            block = f"\n<b>{idx}. {pname}</b>"
+            # ===== Format block cho từng sản phẩm =====
+            block_lines = []
 
+            # Tên sản phẩm
+            block_lines.append(f"\n<b>{idx}. {pname_combo}</b>")
+
+            # Công dụng chính trong combo
             if role_text:
-                block += f"\n▪️ Công dụng chính: {role_text}"
+                block_lines.append(f"▪️ Công dụng chính: {role_text}")
 
             # Giá
             if price_text:
-                block += f"\n💵 Giá: {price_text}"
+                block_lines.append(f"💵 Giá tham khảo: {price_text}")
 
-            # Cách dùng từ combo (ưu tiên)
+            # Cách dùng: ưu tiên dose_text trong combo, sau đó tới usage trong products.json
             if dose_text:
-                block += f"\n💊 Cách dùng: {dose_text}"
-            # Cách dùng từ product.json (fallback)
+                block_lines.append(f"💊 Cách dùng (trong combo): {dose_text}")
             elif usage:
-                block += f"\n💊 Cách dùng: {usage}"
+                block_lines.append(f"💊 Cách dùng gợi ý: {usage}")
 
-            # Link sản phẩm
+            # Link sản phẩm hoặc thông báo hết hàng
             if product_url:
-                block += f"\n🔗 Link: {product_url}"
+                block_lines.append(f"🔗 Link sản phẩm: {product_url}")
+            else:
+                block_lines.append(
+                    "⚠ Sản phẩm này hiện <b>không có link trên hệ thống</b>, "
+                    "có thể đang tạm hết hàng hoặc chưa mở bán online. "
+                    "Anh/chị TVV kiểm tra lại kho/trang web trước khi tư vấn giúp em nhé."
+                )
 
-            lines.append(block)
+            lines.append("\n".join(block_lines))
 
     # ⭐ Thời gian dùng combo
     if duration_text:
-        lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_text}")
+        duration_clean = strip_stars(duration_text)
+        lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_clean}")
 
     # ⭐ Link combo (nếu có)
     if combo_url:
         lines.append(f"\n🛒 <b>Link combo:</b> {combo_url}")
 
-    # ⭐ Lưu ý TVV
+    # ⭐ Lưu ý chung cho TVV
     lines.append(
         "\n⚠️ <i>Lưu ý: Đây là sản phẩm hỗ trợ, không thay thế thuốc điều trị. "
-        "TVV nên hỏi kỹ tình trạng bệnh & thuốc khách đang dùng trước khi tư vấn.</i>"
+        "TVV nên hỏi kỹ tình trạng bệnh và thuốc khách đang dùng trước khi tư vấn, "
+        "đặc biệt với bệnh nền nặng hoặc đang điều trị chuyên khoa.</i>"
     )
 
     return "\n".join(lines)
-
 
 def format_product_reply(product, needs, health_issue=None):
     if not product:
@@ -852,4 +875,5 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
 
