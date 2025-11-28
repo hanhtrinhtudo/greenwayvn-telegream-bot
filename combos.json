@@ -1,0 +1,1040 @@
+{
+  "combos": [
+    {
+      "id": "combo_thai_doc_giam_mo_ngua_ung_thu",
+      "name": "COMBO THẢI ĐỘC - GIẢM MỠ - NGỪA UNG THƯ",
+      "aliases": [
+        "thải độc",
+        "thải độc giảm mỡ",
+        "combo thải độc",
+        "combo thải độc giảm mỡ",
+        "combo thải độc - giảm mỡ - ngừa ung thư"
+      ],
+      "header_text": "THẢI ĐỘC - GIẢM MỠ - NGỪA UNG THƯ",
+      "duration_text": "ComBo Này Dùng Trong 01 Tháng, Để Đạt Được Kết Quả Tối Ưu Cần Dùng Từ 3 Tháng - 6 Tháng",
+      "health_tags": [
+        "gan",
+        "giam_mo",
+        "mien_dich",
+        "thai_doc",
+        "tim_mach",
+        "ung_thu"
+      ],
+      "products": [
+        {
+          "product_code": "01590",
+          "name": "Trà túi lọc TeaVitall Express Fresh",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01590",
+          "dose_text": "TRÀ 01: Thải độc gan, thận, tiêu hóa, giảm Cholesterol(mỡ máu), giải quyết tận gốc táo bón, lợi mật, lợi tiểu, giúp sáng da. Ủ 1–2 túi trà với 150–200 ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070705",
+          "name": "UNCARIA PLUS – 06 (Thải độc, Virus)",
+          "price_text": "481.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070705",
+          "dose_text": "LỌ (06): Chống viêm, kháng khuẩn, kháng virus, chống nhiễm trùng, chống đông máu, giảm cholesterol, ổn định huyết áp, cái thiện chức năng gan, ngừa ung thư. Người lớn: 1 viên x 2 lần/ngày trong khi ăn",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nạng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm Cholesterol, ổn định đường. Người lớn 2 viên/lần, 2 lần/ngày trong bữa ăn, dùng 15 ngày",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_thua_can_beo_phi",
+      "name": "COMBO THỪA CÂN - BÉO PHÌ",
+      "aliases": [
+        "thừa cân",
+        "béo phì",
+        "combo giảm cân",
+        "combo thừa cân",
+        "combo thừa cân - béo phì"
+      ],
+      "header_text": "COMBO THỪA CÂN - BÉO PHÌ",
+      "duration_text": "ComBo Này Dùng Trong 01 Tháng, Để Đạt Được Kết Quả Tối Ưu Cần Dùng Từ 3 Tháng - 6 Tháng",
+      "health_tags": [
+        "giam_mo",
+        "tieu_hoa",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "01590",
+          "name": "Trà túi lọc TeaVitall Express Fresh",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01590",
+          "dose_text": "TRÀ 01: Thải độc gan, thận, tiêu hóa, giảm Cholesterol(mỡ máu), giải quyết tận gốc táo bón, lợi mật, lợi tiểu, giúp sáng da. Ủ 1–2 túi trà với 150–200 ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm Cholesterol, ổn định đường. Người lớn 2 viên/lần, 2 lần/ngày trong bữa ăn, dùng 15 ngày",
+          "optional_note": ""
+        },
+        {
+          "product_code": "012632",
+          "name": "Cocktail BALANCER SLIM",
+          "price_text": "284.000/5 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/012632",
+          "dose_text": "ĐỒ ĂN: Đốt mỡ và săn chắc cơ: 20g protein từ đậu nành và whey giúp tăng trao đổi chất, tăng cường tiêu hóa: Inulin hỗ trợ đường ruột, giảm đường huyết sau ăn.Pha 50g với 200ml nước, lắc đều, dùng ngay.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_sang_da_dang_dep_eo_thon",
+      "name": "COMBO SÁNG DA - DÁNG ĐẸP - EO THON",
+      "aliases": [
+        "sáng da",
+        "dáng đẹp",
+        "eo thon",
+        "combo sáng da dáng đẹp",
+        "combo sáng da - dáng đẹp - eo thon"
+      ],
+      "header_text": "COMBO SÁNG DA - DÁNG ĐẸP - EO THON",
+      "duration_text": "ComBo Này Dùng Trong 01 Tháng,Để Đạt Được Kết Quả Tối Ưu Cần Dùng Từ 3 Tháng - 6 Tháng",
+      "health_tags": [
+        "giam_mo",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "01590",
+          "name": "Trà túi lọc TeaVitall Express Fresh",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01590",
+          "dose_text": "TRÀ 01: Thải độc gan, thận, tiêu hóa, giảm Cholesterol(mỡ máu), giải quyết tận gốc táo bón, lợi mật, lợi tiểu, giúp sáng da. Ủ 1–2 túi trà với 150–200 ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070702",
+          "name": "Welllab ANTISOR ACTIVE",
+          "price_text": "488.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070702",
+          "dose_text": "LỌ (02): Bảo vệ tế bào khỏi tác hại của quá trình oxy hóa, tăng hệ miễn dịch, tăng cường tái tạo mô, giúp kích thích hơn 200 loại enzyme. Người lớn: 1 viên x 2 lần/ngày khi ăn, dùng 1 tháng.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "012621",
+          "name": "Balancer Collagen vị Nam việt quất – Mâm xôi Bắc cực",
+          "price_text": "342.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/012621",
+          "dose_text": "THỨC UỐNG C: Collagen thủy ngân giúp cơ thể hấp thụ tốt nhất, duy trì sự cân bằng nước của da, duy trì sự tươi trẻ sắc đẹp và sức khỏe, ngăn ngừa tổn thương mô sụn khớp. Pha 1 gói (8,2g) với 200ml nước, lắc mạnh, dùng ngay.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_tang_cuong_sinh_ly",
+      "name": "COMBO TĂNG CƯỜNG SINH LÝ",
+      "aliases": [
+        "tăng cường sinh lý",
+        "sinh lý nam",
+        "combo sinh lý",
+        "combo tăng cường sinh lý"
+      ],
+      "header_text": "COMBO TĂNG CƯỜNG SINH LÝ",
+      "duration_text": "",
+      "health_tags": [
+        "sinh_ly_nam"
+      ],
+      "products": [
+        {
+          "product_code": "01592",
+          "name": "TeaVitall Express Premier",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01592",
+          "dose_text": "TRÀ 03: Duy trì sinh lực, tăng cường sinh lý, chống lại sự xâm nhập của virut, bảo vệ cơ quan nội tạng, giúp an thần. Ủ 1–2 túi trà với 150–200ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070711",
+          "name": "LUXMEN – 16 (Sinh lý nam)",
+          "price_text": "530.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070711",
+          "dose_text": "LỌ (16): Cân bằng nội tiết, tăng khoái cảm, giảm viêm tuyến tiền liệt, giảm phù nề, duy trì hoạt động tình dục, tăng sinh lý, tái tạo testosterol, tạo tinh trùng. Người lớn: 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_cai_thien_he_ho_hap",
+      "name": "COMBO CẢI THIỆN HỆ HÔ HẤP",
+      "aliases": [
+        "cải thiện hô hấp",
+        "combo hô hấp",
+        "combo cải thiện hệ hô hấp"
+      ],
+      "header_text": "COMBO CẢI THIỆN HỆ HÔ HẤP",
+      "duration_text": "",
+      "health_tags": [
+        "ho_hap",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "01597",
+          "name": "TeaVitall Express Steam",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01597",
+          "dose_text": "TRÀ 08: Giúp hạ nhiệt, loại bỏ độc tố, long đờm, làm sạch phế quản, hậu Covid, chống viêm, kháng khuẩn, tăng đề kháng. Ủ 1–2 túi trà với 150–200ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070719",
+          "name": "IMMUNOHIT – 10 (Hệ miễn dịch hô hấp)",
+          "price_text": "380.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070719",
+          "dose_text": "LỌ (10): Chống lại bệnh nhiễm trùng do virut gây ra, ổn định nhịp tim, giúp tế bào hấp thụ oxy tốt, giảm stress, giảm mệt mỏi, giảm căng thẳng, chống o xy hóa, bảo vệ mao mạch, cầm máu. Người lớn: 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070709",
+          "name": "BRONCHOLUX – 14 (Hô hấp)",
+          "price_text": "434.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070709",
+          "dose_text": "LỌ (14): Giúp kháng khuẩn, kháng virut, kháng nấm, làm loãng đờm, long đờm, tăng tiết dịch đờm, làm dịu cơn ho, thông mũi, hạ sốt, chống viêm, làm mềm màng nhầy đường hô hấp. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_co_xuong_khop",
+      "name": "COMBO CƠ - XƯƠNG - KHƠP",
+      "aliases": [
+        "cơ xương khớp",
+        "combo cơ xương khớp",
+        "đau khớp",
+        "thoái hóa khớp"
+      ],
+      "header_text": "COMBO CƠ - XƯƠNG - KHƠP",
+      "duration_text": "ComBo Này Dùng Trong 01 Tháng,Để Đạt Được Kết Quả Tối Ưu Cần Dùng Từ 3 Tháng - 6 Tháng",
+      "health_tags": [
+        "mien_dich",
+        "xuong_khop"
+      ],
+      "products": [
+        {
+          "product_code": "070710",
+          "name": "HONDROLUX – 15 (Tái tạo sụn khớp)",
+          "price_text": "635.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070710",
+          "dose_text": "LỌ (15): Kích thích quá trình sản xuất collagen khớp, chống viêm, giảm đau, giảm căng cơ, làm chậm lão hóa khớp, dây chằng và gân, tăng sản xuất chất lỏng hoạt dịch khớp. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070713",
+          "name": "EXPAIN – 18 (Chống viêm, Tan máu)",
+          "price_text": "530.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070713",
+          "dose_text": "LỌ (18): Giảm axit Uric, giảm đau, giảm sưng, giảm phù, cải thiện lưu thông và chỉ số lưu biến của máu, tổng hợp collagen, làm bền thành mạch máu, chống viêm, kháng khuẩn, hạ sốt và tái tạo mô. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070724",
+          "name": "Welllab Calcium & Vitamin K2",
+          "price_text": "365.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070724",
+          "dose_text": "LỌ (29): Ngừa loãng xương (trẻ từ 3 tuổi trở lên ), giảm lắng đọng canxi, hạn chế sỏi thận, giảm chuột rút, vọp bẻ, nhức mỏi, giúp hấp thu và chuẩn hóa can xi tốt. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_cai_thien_he_tieu_hoa",
+      "name": "COMBO CẢI THIỆN HỆ TIÊU HÓA",
+      "aliases": [
+        "cải thiện tiêu hóa",
+        "combo tiêu hóa",
+        "rối loạn tiêu hóa"
+      ],
+      "header_text": "COMBO CẢI THIỆN HỆ TIÊU HÓA",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich",
+        "thai_doc",
+        "tieu_hoa"
+      ],
+      "products": [
+        {
+          "product_code": "01594",
+          "name": "TeaVitall Express Banquet",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01594",
+          "dose_text": "TRÀ 05: Giúp cải thiện chức năng đường ruột, đào thải cặn bã và độc tố. Tăng cường chức năng tiêu hóa, ổn định hoạt động đường tiêu hóa, giảm co thắt và hỗ trợ hệ tiêu hóa hoạt động hiệu quả hơn. Ngày 2 Lần, Mỗi Lần 2 Gói.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070736",
+          "name": "ANTISOR-02 (Chống lão hóa)",
+          "price_text": "488.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070702",
+          "dose_text": "LỌ (27): Chống cảm lạnh và các bệnh truyền nhiễm, tối ưu cho sự phát triển vi khuẩn có lợi, cải thiện nhu động ruột, ổn định tiêu hóa, khôi phục cân bằng hệ vi sinh đường ruột. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01246",
+          "name": "BALANCER PREBIO MIX",
+          "price_text": "289.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/01246",
+          "dose_text": "THỨC UỐNG P: Loại bỏ độc tố, kim loại nặng và phóng xạ, tăng cường phát triển vi khuẩn có lợi, cải thiện nhu động ruột và tăng tiết mật, giúp chuyển hóa tinh bột và chất béo. Pha 7g với 100ml nước nóng (+40°C), khuấy tan.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_an_uong_kem_suy_dinh_duong",
+      "name": "COMBO ĂN UỐNG KÉM - SUY DINH DƯỠNG",
+      "aliases": [
+        "ăn uống kém",
+        "suy dinh dưỡng",
+        "combo suy dinh dưỡng"
+      ],
+      "header_text": "COMBO ĂN UỐNG KÉM - SUY DINH DƯỠNG",
+      "duration_text": "",
+      "health_tags": [
+        "tieu_hoa",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "012632",
+          "name": "Cocktail BALANCER SLIM",
+          "price_text": "284.000/5 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/012632",
+          "dose_text": "ĐỒ ĂN: Đốt mỡ và săn chắc cơ: 20g protein từ đậu nành và whey giúp tăng trao đổi chất, tăng cường tiêu hóa: Inulin hỗ trợ đường ruột, giảm đường huyết sau ăn. Pha 50g với 200ml nước, lắc đều, dùng ngay.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070718",
+          "name": "Welllab B-COMPLEX ACTIVE",
+          "price_text": "380.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070718",
+          "dose_text": "LỌ (26): Giúp cơ thể luôn tràn đầy sức sống, hỗ trợ trí nhớ và khả năng tập trung, giúp tinh thần thư giãn, bền bỉ trước áp lực, cung cấp đầy đủ dinh dưỡng chất thiết yếu. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01246",
+          "name": "BALANCER PREBIO MIX",
+          "price_text": "289.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/01246",
+          "dose_text": "THỨC UỐNG P: Loại bỏ độc tố, kim loại nặng và phóng xạ, tăng cường phát triển vi khuẩn có lợi, cải thiện nhu động ruột và tăng tiết mật, giúp chuyển hóa tinh bột và chất béo. Pha 7g với 100ml nước nóng (+40°C), khuấy tan.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_giam_rung_kich_thich_moc_toc",
+      "name": "COMBO GIẢM RỤNG - KÍCH THÍCH MỌC TÓC",
+      "aliases": [
+        "giảm rụng tóc",
+        "kích thích mọc tóc",
+        "combo mọc tóc"
+      ],
+      "header_text": "COMBO GIẢM RỤNG - KÍCH THÍCH MỌC TÓC",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "012621",
+          "name": "Balancer Collagen vị Nam việt quất – Mâm xôi Bắc cực",
+          "price_text": "342.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/012621",
+          "dose_text": "COLLAGEN: Giảm cường độ viêm khớp, tăng cường tuần hoàn máu, giúp mái tóc và làn da khỏe mạnh. Duy trì sự cân bằng nước cho da, bảo vệ khớp khỏi bào mòn, ngăn ngừa tổn thương mô sụn và duy trì làn da tươi trẻ. Pha 1 gói (8,2g) với 200ml nước, lắc mạnh, dùng ngay.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070718",
+          "name": "Welllab B-COMPLEX ACTIVE",
+          "price_text": "380.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070718",
+          "dose_text": "LỌ (26): Giúp cơ thể luôn tràn đầy sức sống, hỗ trợ trí nhớ và khả năng tập trung, giúp tinh thần thư giãn, bền bỉ trước áp lực, cung cấp đầy đủ dinh dưỡng chất thiết yếu. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070730",
+          "name": "WELLLAB SKIN, HAIR & NAILS",
+          "price_text": "523.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070730",
+          "dose_text": "LỌ (35): Kích thích phát triển và ngăn ngừa rụng tóc, duy trì độ đàn hồi và săn chắc da, chống oxy hóa, bảo vệ da khỏi tia UV, chuyển hóa protein và axít amin trong chân tóc. 1 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_cam_cum_so_mui",
+      "name": "COMBO CẢM CÚM - SỔ MŨI",
+      "aliases": [
+        "cảm cúm",
+        "sổ mũi",
+        "combo cảm cúm"
+      ],
+      "header_text": "COMBO CẢM CÚM - SỔ MŨI",
+      "duration_text": "",
+      "health_tags": [
+        "ho_hap",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "01597",
+          "name": "TeaVitall Express Steam",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01597",
+          "dose_text": "TRÀ 08: Giúp hạ nhiệt, loại bỏ độc tố, long đờm, làm sạch phế quản, hậu Covid, chống viêm, kháng khuẩn, tăng đề kháng. Ngày 2 Lần, Mỗi Lần 2 Gói.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01232",
+          "name": "BALANCER HOT COMFORT vị Mâm xôi - gừng",
+          "price_text": "227.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/01232",
+          "dose_text": "THỨC UỐNG H: Giúp hạ sốt, giảm ho, đào thải độc tố, chống nhiễm trùng, giảm viêm hô hấp, giữ ấm cơ thể, làm sạch đường hô hấp, củng cố và giảm tính thẩm thấm mạch máu. Pha 7g với 100ml nước nóng (+40°C), khuấy tan.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "00333",
+          "name": "Welllab Liquid REVITAL SPRAY",
+          "price_text": "204.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab-liquid/00333",
+          "dose_text": "LỌ XỊT HỌNG: Giúp tăng cường khả năng miễn dịch tại chỗ, khử trùng, làm mềm và giữ ẩm, đặc biệt hiệu quả trong việc hỗ trợ giảm triệu chứng cảm cúm, sổ mũi, làm dịu niêm mạc mũi, giúp thông thoáng và giảm nghẹt mũi. Xịt 2-3 lượt lên màng nhầy miệng, xịt lại nếu cần.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_ho_hap_tre_em",
+      "name": "COMBO HÔ HẤP - TRẺ EM",
+      "aliases": [
+        "hô hấp trẻ em",
+        "combo hô hấp trẻ em"
+      ],
+      "header_text": "COMBO HÔ HẤP - TRẺ EM",
+      "duration_text": "",
+      "health_tags": [
+        "ho_hap",
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "00333",
+          "name": "Welllab Liquid REVITAL SPRAY",
+          "price_text": "204.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab-liquid/00333",
+          "dose_text": "LỌ XỊT HỌNG: Giúp tăng cường khả năng miễn dịch tại chỗ, khử trùng, làm mềm và giữ ẩm, đặc biệt hiệu quả trong việc hỗ trợ giảm triệu chứng cảm cúm, sổ mũi, làm dịu niêm mạc mũi, giúp thông thoáng và giảm nghẹt mũi. Xịt 2-3 lượt lên màng nhầy miệng, xịt lại nếu cần.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01232",
+          "name": "BALANCER HOT COMFORT vị Mâm xôi - gừng",
+          "price_text": "227.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/01232",
+          "dose_text": "THỨC UỐNG H: Giúp hạ sốt, giảm ho, đào thải độc tố, chống nhiễm trùng, giảm viêm hô hấp, giữ ấm cơ thể, làm sạch đường hô hấp, củng cố và giảm tính thẩm thấm mạch máu. Pha 7g với 100ml nước nóng (+40°C), khuấy tan.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01594",
+          "name": "Healthberry Immunity Active",
+          "price_text": "194.000/30 Viên",
+          "product_url": "https://greenwayglobal.vn/shop/brands/healthberry/01423",
+          "dose_text": "KẸO NGẬM: Kích hoạt phản ứng tế bào hệ miễn dịch, tăng khả năng thích ứng, phục hồi cơ thê, chống virut, kháng khuẩn, ngừa cảm lạnh, ngừa tai mũi họng và viêm amidan. Người lớn ngậm 3-5 viên một ngày.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_tieu_hoa_tre_em",
+      "name": "COMBO TIÊU HÓA - TRẺ EM",
+      "aliases": [
+        "tiêu hóa trẻ em",
+        "combo tiêu hóa trẻ em"
+      ],
+      "header_text": "COMBO TIÊU HÓA - TRẺ EM",
+      "duration_text": "",
+      "health_tags": [
+        "tieu_hoa"
+      ],
+      "products": [
+        {
+          "product_code": "01594",
+          "name": "TeaVitall Express Banquet",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01594",
+          "dose_text": "TRÀ 05: Giúp cải thiện chức năng đường ruột, đào thải cặn bã và độc tố. Tăng cường chức năng tiêu hóa, ổn định hoạt động đường tiêu hóa, giảm co thắt và hỗ trợ hệ tiêu hóa hoạt động hiệu quả hơn. Ngày 2 Lần, Mỗi Lần 2 Gói.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "00330",
+          "name": "Axit Fulvic",
+          "price_text": "634.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab-liquid/00330",
+          "dose_text": "LỌ Axit Fulvic: Ngăn ngừa sự xâm nhập của virut vào tế bào, giúp ngăn ngừa các rối loạn liên quan đến tế bào hệ miễn dịch, giúp hỗ trợ hoạt động của enzyme tiêu hóa và hệ vi sinh đường ruột khỏe mạnh. Nhỏ 15-20 giọt vào 200ml nước không clo, uống sáng trước ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "01246",
+          "name": "BALANCER PREBIO MIX",
+          "price_text": "289.000/10 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/01246",
+          "dose_text": "THỨC UỐNG P: Loại bỏ độc tố, kim loại nạng và phóng xạ, tăng cường phát triển vi khuẩn có lợi, cải thiện nhu động ruột và tăng tiết mật, giúp chuyển hóa tinh bột và chất béo. Pha 7g với 100ml nước nóng (+40°C), khuấy tan.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_than_tiet_nieu",
+      "name": "COMBO THẬN - TIẾT NIỆU",
+      "aliases": [
+        "thận tiết niệu",
+        "viêm tiết niệu",
+        "combo thận",
+        "combo thận - tiết niệu"
+      ],
+      "header_text": "COMBO THẬN - TIẾT NIỆU",
+      "duration_text": "",
+      "health_tags": [
+        "than"
+      ],
+      "products": [
+        {
+          "product_code": "070706",
+          "name": "UROLOX – 07 (Thận, tiết niệu)",
+          "price_text": "481.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070706",
+          "dose_text": "LỌ (07): Khử khuẩn, sát trùng, giảm phù nề, lợi tiểu, giảm hoạt động vi khuẩn gây viêm thận, chống viêm tăng quá trình bài tiết axit Uric, giảm viêm tiết niệu, ngăn ngừa sỏi thận. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070716",
+          "name": "Welllab GOODLIVER FORMULA",
+          "price_text": "523.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070716",
+          "dose_text": "LỌ (21): Giúp thải độc gan, chống oxy hóa, tan sỏi mật, thúc đẩy tái tạo và phục hồi gan, tăng cường độ cứng chắc của màng tế bào gan, tăng tiết dịch mật, tổng hợp men tiêu hóa. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_cai_thien_chuc_nang_gan",
+      "name": "COMBO CẢI THIỆN CHỨC NĂNG GAN",
+      "aliases": [
+        "cải thiện chức năng gan",
+        "gan yếu",
+        "combo gan"
+      ],
+      "header_text": "COMBO CẢI THIỆN CHỨC NĂNG GAN",
+      "duration_text": "",
+      "health_tags": [
+        "gan",
+        "mien_dich",
+        "thai_doc",
+        "tim_mach"
+      ],
+      "products": [
+        {
+          "product_code": "070705",
+          "name": "UNCARIA PLUS – 06 (Thải độc, Virus)",
+          "price_text": "481.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070705",
+          "dose_text": "LỌ (06): Chống viêm, kháng khuẩn, kháng virus, chống nhiễm trùng, chống đông máu, giảm cholesterol, ổn định huyết áp, cái thiện chức năng gan, ngừa ung thư. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070716",
+          "name": "Welllab GOODLIVER FORMULA",
+          "price_text": "523.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070716",
+          "dose_text": "LỌ (21): Giúp thải độc gan, chống oxy hóa, tan sỏi mật, thúc đẩy tái tạo và phục hồi gan, tăng cường độ cứng chắc của màng tế bào gan, tăng tiết dịch mật, tổng hợp men tiêu hóa. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_suy_tinh_mach",
+      "name": "COMBO SUY TĨNH MẠCH",
+      "aliases": [
+        "suy tĩnh mạch",
+        "suy giãn tĩnh mạch",
+        "combo suy tĩnh mạch"
+      ],
+      "header_text": "COMBO SUY TĨNH MẠCH",
+      "duration_text": "",
+      "health_tags": [
+        "tim_mach"
+      ],
+      "products": [
+        {
+          "product_code": "070708",
+          "name": "ANGIOLUX – 11 (Bảo vệ mạch máu)",
+          "price_text": "596.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070708",
+          "dose_text": "LỌ (11): Nâng cao vi tuần hoàn và dẫn lưu bạch huyết, ngăn ngừa tắc nghẽn tĩnh mạch, chống oxy hóa, cung cấp oxy hóa cho não, ổn định chỉ số lưu biến máu, chống co thắt. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070713",
+          "name": "EXPAIN – 18 (Chống viêm, Tan máu)",
+          "price_text": "530.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070713",
+          "dose_text": "LỌ (18): Giúp thải độc gan, chống oxy hóa, tan sỏi mật, thúc đẩy tái tạo và phục hồi gan, tăng cường độ cứng chắc của màng tế bào gan, tăng tiết dịch mật, tổng hợp men tiêu hóa. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_vay_nen_viem_da_co_dia",
+      "name": "COMBO VẢY NẾN-VIÊM DA CƠ ĐỊA",
+      "aliases": [
+        "vảy nến",
+        "viêm da cơ địa",
+        "combo vảy nến",
+        "combo viêm da cơ địa"
+      ],
+      "header_text": "COMBO VẢY NẾN-VIÊM DA CƠ ĐỊA",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "070704",
+          "name": "Welllab FUNGISTOP PHYTO",
+          "price_text": "434.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070704",
+          "dose_text": "LỌ (04): Chống lại các bệnh truyền nhiễm, giảm sự phát triển nấm và vi khuẩn gây bệnh, chống viêm kháng virút kháng vi khuẩn và nấm, giảm hoạt động các vi sinh vật gây bệnh. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070727",
+          "name": "Welllab CURCUMIN ACTIVE",
+          "price_text": "519.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070727",
+          "dose_text": "LỌ (22): Chống vi khuẩn, kháng nấm và kháng virút, giúp xử lý và loại bỏ các chất thải tế bào, bình thường hóa chức năng gan, tiêu hóa, chống oxy hóa, giảm mỡ, mỡ nội tạng. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_lupus_ban_do",
+      "name": "COMBO LUPUS BAN ĐỎ",
+      "aliases": [
+        "lupus ban đỏ",
+        "combo lupus"
+      ],
+      "header_text": "COMBO LUPUS BAN ĐỎ",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "070700",
+          "name": "ANTIGELM-01 (Ký sinh trùng)",
+          "price_text": "434.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070700",
+          "dose_text": "LỌ (01): Phá hủy cấu trúc lớp biểu bì của giun sán, giảm chất độc do ký sinh trùng tạo ra, giúp khử trùng, kháng khuẩn chống co thắt, giúp hấp thu và loại bỏ giun sán. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070727",
+          "name": "Welllab CURCUMIN ACTIVE",
+          "price_text": "519.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070727",
+          "dose_text": "LỌ (22): Chống vi khuẩn, kháng nấm và kháng virút, giúp xử lý và loại bỏ các chất thải tế bào, bình thường hóa chức năng gan, tiêu hóa, chống oxy hóa, giảm mỡ, mỡ nội tạng. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_ho_tro_ung_thu",
+      "name": "COMBO HỖ TRỢ UNG THƯ",
+      "aliases": [
+        "hỗ trợ ung thư",
+        "combo hỗ trợ ung thư"
+      ],
+      "header_text": "COMBO HỖ TRỢ UNG THƯ",
+      "duration_text": "",
+      "health_tags": [
+        "gan",
+        "mien_dich",
+        "thai_doc",
+        "tim_mach",
+        "ung_thu"
+      ],
+      "products": [
+        {
+          "product_code": "070705",
+          "name": "UNCARIA PLUS – 06 (Thải độc, Virus)",
+          "price_text": "481.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070705",
+          "dose_text": "LỌ (06): Chống viêm, kháng khuẩn, kháng virus, chống nhiễm trùng, chống đông máu, giảm cholesterol, ổn định huyết áp, cái thiện chức năng gan, ngừa ung thư. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070727",
+          "name": "Welllab CURCUMIN ACTIVE",
+          "price_text": "519.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070727",
+          "dose_text": "LỌ (22): Chống vi khuẩn, kháng nấm và kháng virút, giúp xử lý và loại bỏ các chất thải tế bào, bình thường hóa chức năng gan, tiêu hóa, chống oxy hóa, giảm mỡ, mỡ nội tạng. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_giam_mat_ngu_tram_cam",
+      "name": "COMBO GIẢM MẤT NGỦ - TRẦM CẢM",
+      "aliases": [
+        "giảm mất ngủ",
+        "trầm cảm",
+        "combo mất ngủ",
+        "combo giảm mất ngủ - trầm cảm"
+      ],
+      "header_text": "COMBO GIẢM MẤT NGỦ - TRẦM CẢM",
+      "duration_text": "",
+      "health_tags": [
+        "than_kinh"
+      ],
+      "products": [
+        {
+          "product_code": "01598",
+          "name": "TeaVitall Express Balance 9",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01598",
+          "dose_text": "TRÀ 09: Giảm căng thẳng thần kinh, an thần nhẹ, phòng chống trầm cảm, giúp ngủ ngon, tăng hiệu suất lao động trí óc, phục hồi sinh lực, cân bằng muối và nước. Ngày 2 Lần, Mỗi Lần 2 Gói.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070708",
+          "name": "ANGIOLUX – 11 (Bảo vệ mạch máu)",
+          "price_text": "596.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070708",
+          "dose_text": "LỌ (11): Nâng cao vi tuần hoàn và dẫn lưu bạch huyết, ngăn ngừa tắc nghẽn tĩnh mạch, chống oxy hóa, cung cấp oxy hóa cho não, ổn định chỉ số lưu biến máu, chống co thắt. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070712",
+          "name": "Welllab STRESSOUT PHYTO",
+          "price_text": "530.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070712",
+          "dose_text": "LỌ (17): Tăng chức năng não, giảm oxy huyết cấp, giảm stress, chống rối loạn giấc ngủ, tăng cường cung cấp máu lên não, thư giãn, giảm lo lắng, dễ ngủ. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_tieu_duong",
+      "name": "COMBO TIỂU ĐƯỜNG",
+      "aliases": [
+        "tiểu đường",
+        "đái tháo đường",
+        "combo tiểu đường"
+      ],
+      "header_text": "COMBO TIỂU ĐƯỜNG",
+      "duration_text": "",
+      "health_tags": [
+        "gan",
+        "mien_dich",
+        "thai_doc",
+        "tieu_duong",
+        "tieu_hoa",
+        "ung_thu"
+      ],
+      "products": [
+        {
+          "product_code": "07124",
+          "name": "NẤM CHAGA – 03",
+          "price_text": "269.000/1 hộp",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/07124",
+          "dose_text": "HỘP 03: Chống virut, vi khuẩn gây bệnh, làm lành tổn thương niêm mạc tiêu hóa, thải độc, ức chế tác nhân gây ung thư, chống lão hóa, ổn định lượng đường. Người lớn: 1 viên x 2 lần/ngày sau ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070728",
+          "name": "ANTISWEET – 13 (Tiểu đường)",
+          "price_text": "434.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070728",
+          "dose_text": "LỌ (13): Giúp hạ đường huyết, ức chế sự hấp thụ đường, chuyển hóa carbohydrate, lipid và chất béo, tham gia vào quá trình tổng hợp Glucose. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_buou_co",
+      "name": "COMBO BƯỚU CỔ",
+      "aliases": [
+        "bướu cổ",
+        "bệnh tuyến giáp",
+        "combo bướu cổ"
+      ],
+      "header_text": "COMBO BƯỚU CỔ",
+      "duration_text": "",
+      "health_tags": [
+        "ung_thu"
+      ],
+      "products": [
+        {
+          "product_code": "070735",
+          "name": "FUCOIDAN – 06 (Tảo nâu)",
+          "price_text": "292.000/1 hộp",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070735",
+          "dose_text": "HỘP 06: Giảm tải độc hại, chống oxy hóa, vô hiệu hóa tác nhân gây đột biến nguy hiểm, ổn định chelesterol và đường trong máu, bình thường tuyến giáp, cân bằng nội tiết tố. Người lớn: 1 viên x 2 lần/ngày sau ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070721",
+          "name": "Welllab INDOL-3 VITA",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070721",
+          "dose_text": "LỌ (28): Ngăn ngừa tăng sinh mô tuyến vú, giúp loại bỏ độc tố và giảm tác nhân gây ung thư, Chống oxy hóa, vô hiệu hóa gốc tự do, giảm triệu chứng u xơ, u nang, xơ năng tuyến vú. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_viem_nhiem_phu_khoa_nu",
+      "name": "COMBO VIÊM NHIỄM PHỤ KHOA NỮ",
+      "aliases": [
+        "viêm nhiễm phụ khoa",
+        "combo phụ khoa",
+        "combo viêm nhiễm phụ khoa"
+      ],
+      "header_text": "COMBO VIÊM NHIỄM PHỤ KHOA NỮ",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich",
+        "thai_doc"
+      ],
+      "products": [
+        {
+          "product_code": "01590",
+          "name": "Trà túi lọc TeaVitall Express Fresh",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01590",
+          "dose_text": "TRÀ 01: Thải độc gan, thận, tiêu hóa, giảm Cholesterol(mỡ máu), giải quyết tận gốc táo bón, lợi mật, lợi tiểu, giúp sáng da. Ủ 1–2 túi trà với 150–200 ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070721",
+          "name": "Welllab INDOL-3 VITA",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070721",
+          "dose_text": "LỌ (28): Ngăn ngừa tăng sinh mô tuyến vú, giúp loại bỏ độc tố và giảm tác nhân gây ung thư, Chống oxy hóa, vô hiệu hóa gốc tự do, giảm triệu chứng u xơ, u nang, xơ năng tuyến vú. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070729",
+          "name": "Welllab COLOSTRUM DETOX",
+          "price_text": "568.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070729",
+          "dose_text": "LỌ (34): Giúp loại bỏ kim loại nặng và phóng xạ, giảm chất béo và carbohydrate trong gan, phát triển hệ vi sinh đường ruột, giảm cholesterol, ổn định đường. Người lớn: 2 viên × 2 lần/ngày khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_giam_mo_noi_tang",
+      "name": "COMBO GIẢM MỠ NỘI TẠNG",
+      "aliases": [
+        "giảm mỡ nội tạng",
+        "mỡ nội tạng",
+        "combo giảm mỡ nội tạng"
+      ],
+      "header_text": "COMBO GIẢM MỠ NỘI TẠNG",
+      "duration_text": "",
+      "health_tags": [
+        "giam_mo"
+      ],
+      "products": [
+        {
+          "product_code": "01590",
+          "name": "Trà túi lọc TeaVitall Express Fresh",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01590",
+          "dose_text": "TRÀ 01: Thải độc gan, thận, tiêu hóa, giảm Cholesterol(mỡ máu), giải quyết tận gốc táo bón, lợi mật, lợi tiểu, giúp sáng da. Ủ 1–2 túi trà với 150–200 ml nước nóng (90°C) trong 7–9 phút.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070727",
+          "name": "Welllab CURCUMIN ACTIVE",
+          "price_text": "519.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070727",
+          "dose_text": "LỌ (22): Chống vi khuẩn, kháng nấm và kháng virút, giúp xử lý và loại bỏ các chất thải tế bào, bình thường hóa chức năng gan, tiêu hóa, chống oxy hóa, giảm mỡ, mỡ nội tạng. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "012632",
+          "name": "Cocktail BALANCER SLIM",
+          "price_text": "284.000/5 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/balancer/012632",
+          "dose_text": "ĐỒ ĂN: Đốt mỡ và săn chắc cơ: 20g protein từ đậu nành và whey giúp tăng trao đổi chất, tăng cường tiêu hóa: Inulin hỗ trợ đường ruột, giảm đường huyết sau ăn. Pha 50g với 200ml nước, lắc đều, dùng ngay.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_cho_mat",
+      "name": "COMBO CHO MẮT",
+      "aliases": [
+        "mắt kém",
+        "mỏi mắt",
+        "combo cho mắt"
+      ],
+      "header_text": "COMBO CHO MẮT",
+      "duration_text": "",
+      "health_tags": [
+        "mien_dich"
+      ],
+      "products": [
+        {
+          "product_code": "070714",
+          "name": "Welllab LYSINE PLUS",
+          "price_text": "380.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070714",
+          "dose_text": "LỌ (19): Sản xuất collagen và elastin giúp cải thiện độ đàn hồi và trẻ hóa da, đồng thời bảo vệ thủy tinh thể và võng mạc, duy trì sức khỏe mắt, ngăn ngừa các vấn đề về thị lực và lão hóa da. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070725",
+          "name": "Welllab VISION COMPLEX",
+          "price_text": "480.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070725",
+          "dose_text": "LỌ (30): Phòng chống thoái hóa điểm vàng, ngăn chạn tác hại của bức xạ tia cực tím, chống viêm, cung cấp máu cho võng mạc, giúp bộ máy thì giác hoạt động bình thường. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "00330",
+          "name": "Axit Fulvic",
+          "price_text": "634.000/1 Lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab-liquid/00330",
+          "dose_text": "LỌ Axit Fulvic: Ngăn ngừa sự xâm nhập của virut vào tế bào, giúp ngăn ngừa các rối loạn liên quan đến tế bào hệ miễn dịch, giúp hỗ trợ hoạt động của enzyme tiêu hóa và hệ vi sinh đường ruột khỏe mạnh. Nhỏ 15-20 giọt vào 200ml nước không clo, uống sáng trước ăn.",
+          "optional_note": ""
+        }
+      ]
+    },
+    {
+      "id": "combo_huyet_ap_tim_mach",
+      "name": "COMBO HUYẾT ÁP - TIM MẠCH",
+      "aliases": [
+        "huyết áp",
+        "tim mạch",
+        "cao huyết áp",
+        "combo huyết áp - tim mạch"
+      ],
+      "header_text": "COMBO HUYẾT ÁP - TIM MẠCH",
+      "duration_text": "",
+      "health_tags": [
+        "tim_mach"
+      ],
+      "products": [
+        {
+          "product_code": "01595",
+          "name": "TeaVitall Express Cardex",
+          "price_text": "135.000/30 Gói",
+          "product_url": "https://greenwayglobal.vn/shop/brands/teavitall/01595",
+          "dose_text": "TRÀ 06: Giảm nồng độ cholesterol, tăng tính thấm thành mạch, an thần nhẹ, chống co thắt và hạ huyết áp, giúp ổn định nhịp tim, ngăn ngừa tích tụ cholesterol trong máu và thành mạch, giảm nguy cơ đông máu. Ngày 2 Lần, Mỗi Lần 2 Gói.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070703",
+          "name": "CARDIO-03 (Tim mạch)",
+          "price_text": "596.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070703",
+          "dose_text": "LỌ (03): Giảm cholesterol và glucose trong máu, bảo vệ tim mạch khỏi tổn thương do gốc tự do, cải thiện tuần hoàn, giúp an thần nhẹ, giúp co bóp cơ tim, dẫn truyền xung thần kinh. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        },
+        {
+          "product_code": "070708",
+          "name": "ANGIOLUX – 11 (Bảo vệ mạch máu)",
+          "price_text": "596.000/1 lọ",
+          "product_url": "https://greenwayglobal.vn/shop/brands/welllab/070708",
+          "dose_text": "LỌ (11): Nâng cao vi tuần hoàn và dẫn lưu bạch huyết, ngăn ngừa tắc nghẽn tĩnh mạch, chống oxy hóa, cung cấp oxy hóa cho não, ổn định chỉ số lưu biến máu, chống co thắt. Người lớn: 1 viên x 2 lần/ngày trong khi ăn.",
+          "optional_note": ""
+        }
+      ]
+    }
+  ]
+}
