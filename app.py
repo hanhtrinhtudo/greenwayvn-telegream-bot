@@ -714,14 +714,20 @@ def build_ai_style_reply(user_text: str, core_answer: str) -> str:
     """
     Nhờ OpenAI chỉnh câu trả lời cho mềm mại hơn, giữ nguyên thông tin chính.
     Nếu không có OpenAI, trả về core_answer luôn.
+    LƯU Ý: Chỉ dùng HTML (<b>, <i>...), KHÔNG dùng Markdown (** **, * *).
     """
     if not client:
         return core_answer
 
     prompt = f"""
 Bạn là trợ lý AI nội bộ, xưng hô "em" với TVV, TVV là "anh/chị".
-Hãy giữ nguyên các thông tin quan trọng (số lượng, liều dùng, thời gian, tên sản phẩm),
-chỉ viết lại cho mềm mại, thân thiện, rõ ràng, dễ đọc.
+
+YÊU CẦU BẮT BUỘC:
+- Trả lời bằng tiếng Việt, thân thiện, rõ ràng, dễ đọc.
+- CHỈ dùng định dạng HTML dành cho Telegram: <b>...</b>, <i>...</i>.
+- KHÔNG dùng Markdown, KHÔNG dùng **...**, *...* hoặc bất kỳ ký tự * để in đậm.
+- Không được xoá hay bịa thêm thông tin về sản phẩm, liều dùng, giá, thời gian sử dụng.
+- Giữ nguyên các link (http/https) nếu có.
 
 Câu hỏi của TVV:
 \"\"\"{user_text}\"\"\"
@@ -733,14 +739,25 @@ Dưới đây là nội dung cốt lõi cần truyền đạt, bạn được ph
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "Bạn là trợ lý bán hàng nội bộ cho TVV, trả lời bằng tiếng Việt, thân thiện, rõ ràng."},
+                {
+                    "role": "system",
+                    "content": (
+                        "Bạn là trợ lý bán hàng nội bộ cho đội ngũ TVV. "
+                        "Luôn trả lời bằng tiếng Việt, thân thiện, rõ ràng. "
+                        "Không dùng Markdown, chỉ dùng HTML (<b>, <i>) nếu cần nhấn mạnh."
+                    ),
+                },
                 {"role": "user", "content": prompt},
             ],
         )
-        return resp.choices[0].message.content
+        content = resp.choices[0].message.content or core_answer
+        # Xoá toàn bộ dấu **, * mà OpenAI có thể lỡ chèn
+        content = strip_markdown(content)
+        return content
     except Exception as e:
         print("[ERROR] OpenAI build_ai_style_reply:", e)
         return core_answer
+
 
 def handle_user_message(chat_id, text, username=None, msg_id=None):
     """
@@ -899,3 +916,4 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
