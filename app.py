@@ -133,6 +133,48 @@ def is_negative_feedback(text: str) -> bool:
     """TVV chê câu trả lời trước là sai / không hợp lý."""
     t = (text or "").lower()
     return any(kw in t for kw in NEGATIVE_FEEDBACK_KEYWORDS)
+import re
+
+def detect_user_tone(text: str) -> str | None:
+    """
+    Đoán style xưng hô từ câu của người dùng.
+    Trả về: 'anh_em', 'chi_em', 'ban_minh' hoặc None.
+    """
+    t = (text or "").lower()
+
+    # Ưu tiên 'bạn – mình'
+    if "bạn" in t or "ban oi" in t:
+        return "ban_minh"
+
+    # 'anh – em'
+    if re.search(r"\banh\b", t) and "em" in t:
+        return "anh_em"
+
+    # 'chị – em'
+    if re.search(r"\bchị\b", t) or "chi" in t:
+        if "em" in t:
+            return "chi_em"
+
+    return None
+
+
+def get_pronouns_for_chat(chat_id: int) -> tuple[str, str]:
+    """
+    Lấy cách xưng hô phù hợp cho chat này.
+    you_pronoun = người dùng, me_pronoun = Bot.
+    """
+    ctx = CHAT_CONTEXT.get(chat_id, {})
+    tone = ctx.get("tone", "default")
+
+    if tone == "ban_minh":
+        return "bạn", "mình"
+    if tone == "anh_em":
+        return "anh", "em"
+    if tone == "chi_em":
+        return "chị", "em"
+
+    # Mặc định
+    return "anh/chị", "em"
 
 # Map keyword → health_tag (không phụ thuộc dữ liệu, anh có thể bổ sung dần)
 _HEALTH_KEYWORD_TO_TAG_RAW = {
@@ -216,7 +258,6 @@ def extract_health_tags_from_text(text: str):
             tags.add(tag)
 
     return tags
-
 
 def build_product_aliases(p: dict):
     """Sinh thêm alias từ name + code + aliases gốc."""
@@ -1193,6 +1234,13 @@ def webhook():
             log_to_sheet(log_payload)
 
         return jsonify(ok=True)
+        
+    # Cập nhật style xưng hô theo câu hiện tại (nếu đoán được)
+    tone = detect_user_tone(text)
+    if tone:
+        update_chat_context(chat_id, tone=tone)
+
+    you, me = get_pronouns_for_chat(chat_id)
 
     # ===== Tin nhắn từ TVV =====
     if not text:
@@ -1283,6 +1331,7 @@ def webhook():
         log_to_sheet(log_payload)
 
         return jsonify(ok=True)
+
 
     # 2) TVV chỉnh lại: phải là 1 *sản phẩm cụ thể* (Element Curcumin…)
     if seems_like_product_correction(text):
@@ -1458,4 +1507,5 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
 
