@@ -1,15 +1,78 @@
 {
   "bao tử": "dạ dày",
+  "đau bao tử": "đau dạ dày",
   "bao tử đau": "đau dạ dày",
   "trào ngược dạ dày": "trào ngược",
+
   "gan nóng": "giải độc gan",
   "gan yếu": "men gan cao",
+  "gan nhiễm mỡ độ 1": "gan nhiễm mỡ",
+  "gan nhiễm mỡ độ 2": "gan nhiễm mỡ",
+  "gan nhiễm mỡ độ 3": "gan nhiễm mỡ",
+
   "đường huyết": "đường huyết cao",
+  "đường cao": "đường huyết cao",
+  "bệnh đường": "tiểu đường",
+
   "mỡ trong máu": "mỡ máu",
-  "viêm khớp": "xương khớp",
+  "rối loạn mỡ máu": "mỡ máu",
+  "cholesterol": "cholesterol cao",
+
+  "khó tiêu": "tiêu hóa kém",
+  "đầy hơi": "đầy bụng khó tiêu",
+  "rối loạn tiêu hoá": "rối loạn tiêu hóa",
+
+  "ho dai dẳng": "ho kéo dài",
+  "ho nhiều": "ho kéo dài",
+  "viêm họng hạt": "viêm họng",
+  "viêm xoang mũi": "viêm xoang",
+
+  "hay ốm vặt": "hay ốm",
+  "sức đề kháng yếu": "sức đề kháng kém",
+
+  "viêm khớp gối": "viêm khớp",
+  "đau khớp gối": "đau khớp",
   "nhức khớp": "đau khớp",
-  "ho kéo dài": "ho, viêm họng",
-  "suy nhược cơ thể": "suy giảm miễn dịch",
-  "khó ngủ": "mất ngủ",
-  "thần kinh yếu": "căng thẳng, mất ngủ"
+  "thoái hóa cột sống": "thoái hóa khớp",
+
+  "giãn tĩnh mạch chân": "giãn tĩnh mạch",
+  "huyết áp thấp": "huyết áp không ổn định",
+
+  "bệnh thận": "thận yếu",
+  "suy thận độ 1": "suy thận",
+  "suy thận độ 2": "suy thận",
+  "suy thận độ 3": "suy thận",
+
+  "yếu sinh lý nam": "yếu sinh lý",
+  "xuất tinh sớm ở nam": "xuất tinh sớm",
+  "rlcd": "rối loạn cương",
+
+  "khó ngủ về đêm": "khó ngủ",
+  "mất ngủ triền miên": "mất ngủ",
+  "căng thẳng thần kinh": "căng thẳng kéo dài",
+
+  "ung thư tuyến giáp": "ung thư",
+  "ung thư vú": "ung thư",
+  "ung thư đại tràng": "ung thư",
+  "ung thư gan": "ung thư",
+
+  "bướu cổ đơn thuần": "bướu cổ",
+  "viêm tuyến giáp": "tuyến giáp",
+
+  "lupus ban đỏ hệ thống": "lupus ban đỏ",
+
+  "viêm da cơ địa dị ứng": "viêm da cơ địa",
+  "vảy nến mảng": "vảy nến",
+
+  "viêm nhiễm phụ khoa": "viêm phụ khoa",
+  "nấm phụ khoa": "viêm phụ khoa",
+
+  "rụng tóc nhiều": "rụng tóc",
+  "tóc thưa": "tóc mỏng",
+
+  "mắt kém": "mắt mờ",
+  "mỏi mắt khi làm việc": "mỏi mắt",
+
+  "nám sạm": "nám da",
+  "da không đều màu": "da xấu"
 }
