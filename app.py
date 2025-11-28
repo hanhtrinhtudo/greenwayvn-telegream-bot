@@ -384,7 +384,48 @@ def send_message(chat_id, text, reply_markup=None, parse_mode="Markdown"):
         requests.post(url, data=payload, timeout=10)
     except Exception as e:
         print("Error sending message:", e)
+import re
 
+def detect_user_tone(text: str) -> str | None:
+    """
+    Đoán style xưng hô từ câu của người dùng.
+    Trả về: 'anh_em', 'chi_em', 'ban_minh' hoặc None.
+    """
+    t = (text or "").lower()
+
+    # Ưu tiên 'bạn – mình'
+    if "bạn" in t or "ban oi" in t:
+        return "ban_minh"
+
+    # 'anh – em'
+    if re.search(r"\banh\b", t) and "em" in t:
+        return "anh_em"
+
+    # 'chị – em'
+    if re.search(r"\bchị\b", t) or "chi" in t:
+        if "em" in t:
+            return "chi_em"
+
+    return None
+
+
+def get_pronouns_for_chat(chat_id: int) -> tuple[str, str]:
+    """
+    Lấy cách xưng hô phù hợp cho chat này.
+    you_pronoun = người dùng, me_pronoun = Bot.
+    """
+    ctx = CHAT_CONTEXT.get(chat_id, {})
+    tone = ctx.get("tone", "default")
+
+    if tone == "ban_minh":
+        return "bạn", "mình"
+    if tone == "anh_em":
+        return "anh", "em"
+    if tone == "chi_em":
+        return "chị", "em"
+
+    # Mặc định
+    return "anh/chị", "em"
 # ============== Helper: utility ==============
 def contains_any(text, keywords):
     text = text.lower()
@@ -1195,21 +1236,33 @@ def webhook():
 
         return jsonify(ok=True)
     
-    # ====== NLP + CONTEXT: xử lý phản hồi & chỉnh sản phẩm ======
+    you, me = get_pronouns_for_chat(chat_id)
     ctx = CHAT_CONTEXT.get(chat_id, {})
 
     # 1) TVV chê câu trả lời trước là sai
     if is_negative_feedback(text):
+        last_combo_name   = ctx.get("last_matched_combo_name") or ""
+        last_product_name = ctx.get("last_matched_product_name") or ""
+
+        hint = ""
+        if last_combo_name:
+            hint = f" (lúc nãy {me} đang ưu tiên combo *{last_combo_name}*)"
+        elif last_product_name:
+            hint = f" (lúc nãy {me} đang ưu tiên sản phẩm *{last_product_name}*)"
+
         reply = (
-            "Dạ em xin lỗi, gợi ý ở trên chưa đúng ý anh/chị rồi ạ. 🙏\n\n"
-            "Anh/chị mô tả giúp em rõ hơn tình trạng của khách (bệnh nền, triệu chứng chính) "
-            "và mong muốn ưu tiên (giảm triệu chứng, hỗ trợ gan, giảm mỡ, v.v.) "
-            "để em xem lại cho chuẩn hơn ạ."
+            f"Dạ {me} xin lỗi, gợi ý vừa rồi chưa đúng ý {you}{hint} ạ. 🙏\n\n"
+            f"Để {me} học đúng theo phác đồ thực tế của công ty, "
+            f"{you} cho {me} luôn *combo hoặc sản phẩm mà bên mình đang dùng hiệu quả nhất cho case này* nhé.\n"
+            "Chỉ cần gửi cho em:\n"
+            "• Tên combo/sản phẩm (hoặc mã)\n"
+            "• Nếu có phân loại (nhẹ/vừa/nặng, hoặc theo ngân sách) thì ghi thêm giúp em ạ.\n\n"
+            f"Lần sau gặp ca tương tự, {me} sẽ ưu tiên đúng combo/sản phẩm đó để hỗ trợ {you} nhanh và chuẩn hơn."
         )
+
         reply = polish_answer_with_ai(reply)
         send_message(chat_id, reply, reply_markup=MAIN_KEYBOARD)
 
-        # Cập nhật context: lần trước tư vấn combo/sản phẩm nào
         update_chat_context(
             chat_id,
             last_intent="user_feedback_negative",
@@ -1217,7 +1270,6 @@ def webhook():
             last_reply=reply,
         )
 
-        # Log: để auto-learning hiểu đây là feedback NEGATIVE
         log_payload = {
             "chat_id": chat_id,
             "user_name": user_name,
@@ -1406,3 +1458,4 @@ def healthz():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
+
