@@ -410,8 +410,8 @@ Luôn trả về đúng dạng JSON hợp lệ.
 def format_combo_reply(combo, needs, health_issue):
     if not combo:
         return (
-            f"Hiện tại em chưa tìm thấy combo phù hợp trong dữ liệu cho vấn đề: <b>{health_issue}</b>.\n"
-            "Anh/chị thử mô tả rõ hơn tình trạng hoặc liên hệ tuyến trên để được hỗ trợ chi tiết hơn nhé."
+            f"Hiện tại em chưa tìm thấy combo phù hợp cho vấn đề: <b>{health_issue}</b>.\n"
+            "Anh/chị mô tả rõ hơn tình trạng sức khoẻ để em hỗ trợ chính xác hơn nhé."
         )
 
     name = combo.get("name", "Combo phù hợp")
@@ -421,46 +421,77 @@ def format_combo_reply(combo, needs, health_issue):
     products = combo.get("products", [])
 
     lines = []
-    lines.append(f"<b>{name}</b>")
+
+    # ⭐ Tiêu đề combo
+    lines.append(f"🎯 <b>{name}</b>")
     if header_text:
-        lines.append(header_text)
+        lines.append(f"📌 {header_text}")
 
-    # Danh sách sản phẩm trong combo
-    if not needs or "products" in needs or "combo" in needs:
-        if products:
-            lines.append("")
-            lines.append("<b>Thành phần combo:</b>")
-            for idx, p in enumerate(products, start=1):
-                pname = p.get("name") or p.get("product_name") or p.get("product_code") or "Sản phẩm"
-                role_text = p.get("role_text", "")
-                dose_text = p.get("dose_text", "")
-                product_url = p.get("product_url", "")
-                line = f"{idx}. {pname}"
-                if role_text:
-                    line += f" – {role_text}"
-                if dose_text:
-                    line += f"\n   👉 Cách dùng: {dose_text}"
-                if product_url and ("product_links" in needs or not needs):
-                    line += f"\n   🔗 Link: {product_url}"
-                lines.append(line)
+    # ⭐ Danh sách sản phẩm
+    if products:
+        lines.append("\n🧩 <b>Các sản phẩm trong combo:</b>")
 
-    # Thời gian sử dụng
-    if (not needs) or ("duration" in needs):
-        if duration_text:
-            lines.append("")
-            lines.append(f"⏱ <b>Thời gian khuyến nghị:</b> {duration_text}")
+        for idx, p in enumerate(products, start=1):
+            pname = (
+                p.get("name")
+                or p.get("product_name")
+                or p.get("product_code")
+            ) or "Sản phẩm"
 
-    lines.append("")
-    if combo_url and ("product_links" in needs or not needs):
-        lines.append(f"🛒 Link combo (nếu đặt online): {combo_url}")
-        lines.append("")
+            # Lấy thông tin sản phẩm từ products.json
+            product_detail = None
+            for prod in products_list:
+                if normalize_text(prod.get("name","")) == normalize_text(pname) or \
+                   normalize_text(prod.get("code","")) == normalize_text(p.get("code","")):
+                    product_detail = prod
+                    break
 
+            price_text = product_detail.get("price_text", "") if product_detail else ""
+            usage = product_detail.get("usage_text", "") if product_detail else ""
+            product_url = product_detail.get("product_url", "") if product_detail else ""
+
+            role_text = p.get("role_text", "")
+            dose_text = p.get("dose_text", "")
+
+            # Format 1 sản phẩm
+            block = f"\n<b>{idx}. {pname}</b>"
+
+            if role_text:
+                block += f"\n▪️ Công dụng chính: {role_text}"
+
+            # Giá
+            if price_text:
+                block += f"\n💵 Giá: {price_text}"
+
+            # Cách dùng từ combo (ưu tiên)
+            if dose_text:
+                block += f"\n💊 Cách dùng: {dose_text}"
+            # Cách dùng từ product.json (fallback)
+            elif usage:
+                block += f"\n💊 Cách dùng: {usage}"
+
+            # Link sản phẩm
+            if product_url:
+                block += f"\n🔗 Link: {product_url}"
+
+            lines.append(block)
+
+    # ⭐ Thời gian dùng combo
+    if duration_text:
+        lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_text}")
+
+    # ⭐ Link combo (nếu có)
+    if combo_url:
+        lines.append(f"\n🛒 <b>Link combo:</b> {combo_url}")
+
+    # ⭐ Lưu ý TVV
     lines.append(
-        "Lưu ý: Đây là sản phẩm hỗ trợ, không thay thế thuốc điều trị. "
-        "Anh/chị TVV nên hỏi kỹ tình trạng và thuốc đang dùng trước khi tư vấn cho khách."
+        "\n⚠️ <i>Lưu ý: Đây là sản phẩm hỗ trợ, không thay thế thuốc điều trị. "
+        "TVV nên hỏi kỹ tình trạng bệnh & thuốc khách đang dùng trước khi tư vấn.</i>"
     )
 
     return "\n".join(lines)
+
 
 def format_product_reply(product, needs, health_issue=None):
     if not product:
@@ -821,3 +852,4 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
