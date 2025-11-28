@@ -727,6 +727,75 @@ def build_meal_plan_snippet(parsed: dict) -> str:
     lines.append("- Nếu tập luyện: bữa phụ trước/sau tập (chuối + sữa chua không đường).")
     return "\n".join(lines)
 
+# ===== Nhận diện câu hỏi về ăn uống / sinh hoạt =====
+LIFESTYLE_KEYWORDS = [
+    "ăn uống", "an uong",
+    "chế độ ăn", "che do an",
+    "kiêng", "kieng", "kiêng gì", "kieng gi",
+    "sinh hoạt", "sinh hoat",
+    "tập luyện", "tap luyen",
+    "lối sống", "loi song",
+    "uống nước", "uong nuoc",
+    "ngủ nghỉ", "ngu nghi"
+]
+
+def needs_lifestyle_advice(text: str, goals: list[str] | None = None) -> bool:
+    """Xem câu hỏi có nhắc đến ăn uống / sinh hoạt không."""
+    t = (text or "").lower()
+    if any(k in t for k in LIFESTYLE_KEYWORDS):
+        return True
+
+    if goals:
+        for g in goals:
+            gl = g.lower()
+            if any(k in gl for k in LIFESTYLE_KEYWORDS):
+                return True
+    return False
+
+def build_lifestyle_advice_with_ai(text: str, health_tags: list[str]) -> str:
+    """
+    Sinh phần gợi ý lối sống / ăn uống dựa trên câu hỏi + health_tags.
+    Chỉ nói về thói quen, KHÔNG kê thuốc, không hứa hẹn chữa khỏi bệnh.
+    """
+    if not client:
+        return ""
+
+    try:
+        tag_hint = ", ".join(health_tags) if health_tags else ""
+        sys_prompt = (
+            "Bạn là trợ lý hỗ trợ *tư vấn viên thực phẩm chức năng* tại Việt Nam.\n"
+            "Nhiệm vụ: tóm tắt 3–6 gạch đầu dòng về *lối sống và chế độ ăn uống nên lưu ý* "
+            "cho khách hàng, dựa trên mô tả tình trạng mà TVV gửi.\n"
+            "- Không chẩn đoán bệnh, không kê đơn, không nêu tên thuốc tây hoặc liều thuốc.\n"
+            "- Không được hứa hẹn chữa khỏi bệnh.\n"
+            "- Dùng ngôn ngữ dễ hiểu, ngắn gọn, dạng gạch đầu dòng.\n"
+            "- Luôn có 1 gạch đầu dòng nhắc khách nên đi khám bác sĩ nếu triệu chứng kéo dài hoặc nặng lên.\n"
+            "- Nếu thông tin quá chung chung, trả lời chung nhưng vẫn hữu ích.\n"
+        )
+
+        user_prompt = (
+            f"Câu hỏi / tình trạng khách mô tả: ```{text}```\n"
+            f"Health tags gợi ý: {tag_hint}"
+        )
+
+        resp = client.chat.completions.create(
+            model="gpt-4.1-mini",
+            temperature=0.4,
+            messages=[
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+        )
+        content = (resp.choices[0].message.content or "").strip()
+        if not content:
+            return ""
+
+        # Bọc lại thành block rõ ràng
+        return "\n📝 *Một số lưu ý về lối sống & ăn uống (tham khảo):*\n" + content
+
+    except Exception as e:
+        print("build_lifestyle_advice_with_ai error:", e)
+        return ""
 
 def orchestrate_health_answer(text: str, intent: str):
     """
@@ -786,12 +855,21 @@ def orchestrate_health_answer(text: str, intent: str):
                 matched_product = products_old[0]
             reply = format_products_answer(products_old)
 
+        # Gợi ý khung bữa ăn (cố định, nếu cần)
     meal_plan = build_meal_plan_snippet(parsed)
+
+    # Gợi ý lối sống / ăn uống theo từng ca, dùng OpenAI
+    lifestyle = ""
+    if needs_lifestyle_advice(text, parsed.get("goals")):
+        lifestyle = build_lifestyle_advice_with_ai(text, ranking.get("tags") or [])
+
     if meal_plan:
         reply = f"{reply}{meal_plan}"
+    if lifestyle:
+        # xuống dòng tách block cho dễ đọc
+        reply = f"{reply}\n\n{lifestyle}"
 
     return reply, matched_combo, matched_product, parsed, ranking
-
 
 # ============== AI: phân loại intent ==============
 INTENT_LABELS = [
