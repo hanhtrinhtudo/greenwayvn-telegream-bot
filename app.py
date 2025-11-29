@@ -27,12 +27,15 @@ LINK_WEBSITE = os.getenv("LINK_WEBSITE", "https://your-website.com")
 # ID Telegram của tuyến trên (upline), dạng số (string trong .env)
 UPLINE_CHAT_ID = os.getenv("UPLINE_CHAT_ID", "")
 
+# Lưu câu hỏi gần nhất của từng chat
+LAST_USER_TEXT = {}
+
+# Trạng thái quy trình chuyển tuyến trên cho từng chat
+PENDING_UPLINE_STATE = {}  # "", "waiting_content", "waiting_confirm"
+PENDING_UPLINE_TEXT = {}   # nội dung dự kiến gửi tuyến trên
+
 # Webhook Apps Script để log vào Google Sheets
 LOG_SHEET_WEBHOOK_URL = os.getenv("LOG_SHEET_WEBHOOK_URL", "")
-
-# Bộ nhớ tạm: câu gần nhất & trạng thái chờ gửi tuyến trên
-LAST_USER_TEXT = {}      # {chat_id_str: "last message"}
-PENDING_UPLINE = {}      # {chat_id_str: {"question": "câu hỏi chuẩn bị gửi"}}
 
 # ============== KIỂM TRA ENV ==============
 if not TELEGRAM_TOKEN:
@@ -72,7 +75,6 @@ def safe_load_json(path, default=None):
         print(f"[WARN] Không đọc được JSON {path}: {e}")
         return default
 
-
 def extract_list(data, key=None):
     """
     combos.json: { "combos": [ ... ] }
@@ -83,7 +85,6 @@ def extract_list(data, key=None):
     if isinstance(data, dict) and key and isinstance(data.get(key), list):
         return data[key]
     return []
-
 
 # đọc dữ liệu thật sự dùng
 combos_raw = safe_load_json(COMBOS_PATH, default={"combos": []})
@@ -108,7 +109,6 @@ def normalize_text(text: str) -> str:
     text = "".join(ch for ch in text if unicodedata.category(ch) != "Mn")
     return text
 
-
 def strip_markdown(text: str) -> str:
     """
     Loại bỏ các ký hiệu markdown đơn giản như **bold**, *italic* trong chuỗi.
@@ -116,20 +116,13 @@ def strip_markdown(text: str) -> str:
     """
     if not isinstance(text, str):
         return text
-
-    # Bỏ **TEXT**
     text = re.sub(r"\*\*(.*?)\*\*", r"\1", text)
-    # Bỏ *TEXT*
     text = re.sub(r"\*(.*?)\*", r"\1", text)
-    # Bỏ các dấu * lẻ còn sót
     text = text.replace("*", "")
-
     return text.strip()
-
 
 def text_contains(text: str, keyword: str) -> bool:
     return normalize_text(keyword) in normalize_text(text)
-
 
 def send_telegram_message(chat_id, text, reply_to_message_id=None, parse_mode="HTML"):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
@@ -148,7 +141,6 @@ def send_telegram_message(chat_id, text, reply_to_message_id=None, parse_mode="H
             print("[ERROR] Telegram sendMessage:", resp.text)
     except Exception as e:
         print("[ERROR] Gửi tin nhắn Telegram lỗi:", e)
-
 
 def log_to_sheet(payload: dict):
     if not LOG_SHEET_WEBHOOK_URL:
@@ -177,7 +169,6 @@ def apply_synonyms(text: str) -> str:
             continue
     return result
 
-
 def expand_health_issue(health_issue: str):
     """
     Từ 1 câu/ cụm 'vấn đề sức khoẻ' → trả về list:
@@ -191,12 +182,10 @@ def expand_health_issue(health_issue: str):
     if base:
         res.append(base)
 
-    # Áp synonyms
     syn = apply_synonyms(base)
     if syn and syn not in res:
         res.append(syn)
 
-    # Dùng health_tags_map để mở rộng
     try:
         h_norm = normalize_text(base)
         if isinstance(health_tags_map_data, dict):
@@ -222,10 +211,6 @@ def expand_health_issue(health_issue: str):
 
 # ============== TÌM KIẾM SẢN PHẨM & COMBO ==============
 def search_combo_by_health_issue(health_issue: str):
-    """
-    Tìm combo theo vấn đề sức khỏe (dùng health_tags & aliases & name),
-    có sử dụng health_tags_map + synonyms.
-    """
     if not health_issue:
         return None
 
@@ -240,7 +225,6 @@ def search_combo_by_health_issue(health_issue: str):
         name = combo.get("name", "")
         aliases = combo.get("aliases", [])
         health_tags = combo.get("health_tags", [])
-
         fields = [name] + aliases + health_tags
 
         score = 0
@@ -256,12 +240,7 @@ def search_combo_by_health_issue(health_issue: str):
 
     return best_combo
 
-
 def search_product_by_health_issue(health_issue: str):
-    """
-    Tìm 1–3 sản phẩm lẻ liên quan đến vấn đề sức khoẻ,
-    có dùng health_tags_map + synonyms.
-    """
     if not health_issue:
         return []
 
@@ -292,18 +271,11 @@ def search_product_by_health_issue(health_issue: str):
         if match:
             results.append(p)
 
-    # Giới hạn 3 sản phẩm cho đỡ loãng
     return results[:3]
 
-
 def search_product_by_name_or_code(query: str):
-    """
-    Tìm sản phẩm theo mã hoặc tên/alias.
-    """
     if not query:
         return None
-
-    # Chuẩn hóa bằng synonyms trước khi normalize
     query = apply_synonyms(query)
     q_norm = normalize_text(query)
     best_score = 0
@@ -313,7 +285,6 @@ def search_product_by_name_or_code(query: str):
         code = p.get("code", "")
         name = p.get("name", "")
         aliases = p.get("aliases", [])
-
         fields = [code, name] + aliases
         score = 0
         for field in fields:
@@ -464,7 +435,6 @@ def format_combo_reply(combo, needs, health_issue):
             "Anh/chị mô tả rõ hơn tình trạng sức khoẻ để em hỗ trợ chính xác hơn nhé."
         )
 
-    # ===== Lấy & làm sạch thông tin combo =====
     raw_name = combo.get("name", "Combo phù hợp")
     raw_header_text = combo.get("header_text", "")
     duration_text = combo.get("duration_text", "")
@@ -476,22 +446,16 @@ def format_combo_reply(combo, needs, health_issue):
     duration_text = strip_markdown(duration_text)
 
     lines = []
-
-    # ⭐ Tiêu đề combo
     lines.append(f"🎯 <b>{name}</b>")
     if header_text:
         lines.append(f"📌 {header_text}")
 
-    # ⭐ Danh sách sản phẩm trong combo
     if products:
         lines.append("\n🧩 <b>Các sản phẩm trong combo:</b>")
-
         for idx, p in enumerate(products, start=1):
-            # Tên từ combo
             pname_combo = p.get("name") or p.get("product_name") or p.get("product_code") or "Sản phẩm"
             pname_combo = strip_markdown(pname_combo)
 
-            # Tìm sản phẩm tương ứng trong products_list
             product_detail = None
             for prod in products_list:
                 if normalize_text(prod.get("name", "")) == normalize_text(pname_combo) or \
@@ -502,31 +466,19 @@ def format_combo_reply(combo, needs, health_issue):
             price_text = strip_markdown(product_detail.get("price_text", "")) if product_detail else ""
             usage = strip_markdown(product_detail.get("usage_text", "")) if product_detail else ""
             product_url = (product_detail.get("product_url", "") or "").strip() if product_detail else ""
-
             role_text = strip_markdown(p.get("role_text", "")) if p.get("role_text") else ""
             dose_text = strip_markdown(p.get("dose_text", "")) if p.get("dose_text") else ""
 
-            # ===== Format block cho từng sản phẩm =====
             block_lines = []
-
-            # Tên sản phẩm
             block_lines.append(f"\n<b>{idx}. {pname_combo}</b>")
-
-            # Công dụng chính trong combo
             if role_text:
                 block_lines.append(f"▪️ Công dụng chính: {role_text}")
-
-            # Giá
             if price_text:
                 block_lines.append(f"💵 Giá tham khảo: {price_text}")
-
-            # Cách dùng: ưu tiên dose_text trong combo, sau đó tới usage trong products.json
             if dose_text:
                 block_lines.append(f"💊 Cách dùng (trong combo): {dose_text}")
             elif usage:
                 block_lines.append(f"💊 Cách dùng gợi ý: {usage}")
-
-            # Link sản phẩm hoặc thông báo hết hàng
             if product_url:
                 block_lines.append(f"🔗 Link sản phẩm: {product_url}")
             else:
@@ -538,23 +490,17 @@ def format_combo_reply(combo, needs, health_issue):
 
             lines.append("\n".join(block_lines))
 
-    # ⭐ Thời gian dùng combo
     if duration_text:
         lines.append(f"\n⏱ <b>Thời gian khuyến nghị:</b> {duration_text}")
-
-    # ⭐ Link combo (nếu có)
     if combo_url:
         lines.append(f"\n🛒 <b>Link combo:</b> {combo_url}")
 
-    # ⭐ Lưu ý chung cho TVV
     lines.append(
         "\n⚠️ <i>Lưu ý: Đây là sản phẩm hỗ trợ, không thay thế thuốc điều trị. "
         "TVV nên hỏi kỹ tình trạng bệnh và thuốc khách đang dùng trước khi tư vấn, "
         "đặc biệt với bệnh nền nặng hoặc đang điều trị chuyên khoa.</i>"
     )
-
     return "\n".join(lines)
-
 
 def format_product_reply(product, needs, health_issue=None):
     if not product:
@@ -571,7 +517,7 @@ def format_product_reply(product, needs, health_issue=None):
     benefits = strip_markdown(product.get("benefits_text", ""))
     usage = strip_markdown(product.get("usage_text", ""))
     price_text = strip_markdown(product.get("price_text", ""))
-    duration_text = strip_markdown(product.get("duration_text", ""))  # có thể chưa có trong file, không sao
+    duration_text = strip_markdown(product.get("duration_text", ""))
     product_url = (product.get("product_url", "") or "").strip()
     warnings = strip_markdown(product.get("notes_for_tvv", ""))
 
@@ -584,45 +530,32 @@ def format_product_reply(product, needs, health_issue=None):
     if price_text:
         lines.append(f"💰 Giá tham khảo: {price_text}")
 
-    # Thành phần
     if (not needs) or ("ingredients" in needs):
         if ingredients:
             lines.append("")
             lines.append(f"<b>Thành phần chính:</b> {ingredients}")
 
-    # Lợi ích
     if (not needs) or ("benefits" in needs):
         if benefits:
             lines.append("")
             lines.append("<b>Lợi ích nổi bật:</b>")
             lines.append(benefits)
 
-    # Cách dùng
     if (not needs) or ("usage" in needs):
         if usage:
             lines.append("")
             lines.append(f"<b>Cách dùng khuyến nghị:</b> {usage}")
 
-    # Thời gian sử dụng (nếu có)
     if (not needs) or ("duration" in needs):
         if duration_text:
             lines.append("")
             lines.append(f"<b>Thời gian sử dụng nên duy trì:</b> {duration_text}")
 
-    # Link
     if (not needs) or ("product_links" in needs):
         if product_url:
             lines.append("")
             lines.append(f"🔗 <b>Link sản phẩm:</b> {product_url}")
-        else:
-            lines.append("")
-            lines.append(
-                "⚠ Sản phẩm này hiện <b>không có link trên hệ thống</b>, "
-                "có thể đang tạm hết hàng hoặc chưa mở bán online. "
-                "Anh/chị TVV kiểm tra lại kho/trang web trước khi tư vấn giúp em nhé."
-            )
 
-    # Cảnh báo / lưu ý cho TVV
     if warnings:
         lines.append("")
         lines.append(f"⚠ <b>Lưu ý cho TVV:</b> {warnings}")
@@ -632,22 +565,15 @@ def format_product_reply(product, needs, health_issue=None):
         "Anh/chị TVV lưu ý tư vấn rõ đây là sản phẩm hỗ trợ, không thay thế thuốc điều trị, "
         "khuyến khích khách tham khảo ý kiến bác sĩ nếu đang dùng thuốc hoặc có bệnh nền nặng."
     )
-
     return "\n".join(lines)
 
-
 def format_faq_reply(faq_list, key_field="title"):
-    """
-    faq_list: có thể là list string hoặc list object {title, content}
-    """
     if not faq_list:
         return "Hiện tại em chưa có dữ liệu hướng dẫn chi tiết trong hệ thống. Anh/chị giúp em liên hệ tuyến trên để được hỗ trợ nhé."
 
-    # Nếu là list string
     if all(isinstance(x, str) for x in faq_list):
         return "\n".join(faq_list)
 
-    # Nếu là list object
     lines = []
     for i, item in enumerate(faq_list, start=1):
         if isinstance(item, str):
@@ -660,7 +586,6 @@ def format_faq_reply(faq_list, key_field="title"):
                 line += f"\n   {content}"
             lines.append(line)
     return "\n\n".join(lines)
-
 
 def format_navigation_reply():
     lines = []
@@ -817,92 +742,61 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
       - PENDING_UPLINE: xác nhận trước khi gửi tuyến trên
       - LAST_USER_TEXT: lưu câu gần nhất (cho log, mở rộng sau này)
     """
-    global LAST_USER_TEXT, PENDING_UPLINE
+     global LAST_USER_TEXT, PENDING_UPLINE_STATE, PENDING_UPLINE_TEXT
 
     chat_key = str(chat_id)
-    user_raw = text.strip()
-    low = normalize_text(user_raw)
+    state = PENDING_UPLINE_STATE.get(chat_key, "")
+    reply_text_core = ""
+    ask_upline = False
 
-    # =========================================================
-    # 1️⃣ Nếu đang CHỜ XÁC NHẬN gửi tuyến trên
-    # =========================================================
-    if chat_key in PENDING_UPLINE:
-        pending_q = PENDING_UPLINE[chat_key]["question"]
+   # ===== 1. Nếu đang ở bước CHỜ NỘI DUNG gửi tuyến trên =====
+    if state == "waiting_content":
+        main_question = text.strip()
+        PENDING_UPLINE_TEXT[chat_key] = main_question
+        PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
 
-        CONFIRM_WORDS = [
-            "dong y",
-            "dong y gui",
-            "ok",
-            "ok gui",
-            "gui di",
-            "gui",
-            "ok gui di",
-        ]
-        CANCEL_WORDS = [
-            "khong",
-            "khong gui",
-            "khong phai",
-            "thoi",
-            "thoi khoi gui",
-            "anh da co cau hoi nao dau",
-        ]
-
-        if low in CONFIRM_WORDS:
-            # ✅ Gửi thật sự lên tuyến trên
-            reply_text_core = escalate_to_upline(
-                chat_id=chat_id,
-                username=username,
-                main_question=pending_q,
-                extra_note=None,
-            )
-            PENDING_UPLINE.pop(chat_key, None)
-            intent = "BUSINESS_QUESTION_CONFIRM_SEND"
-
-        elif low in CANCEL_WORDS:
-            # ❌ Huỷ gửi, quay lại trạng thái bình thường
-            PENDING_UPLINE.pop(chat_key, None)
-            reply_text_core = (
-                "Dạ em chưa gửi câu hỏi nào lên tuyến trên nhé.\n"
-                "Khi anh/chị có câu hỏi cụ thể về sản phẩm, combo hay chính sách, "
-                "cứ nhắn cho em, em sẽ giúp soạn và gửi lại lên tuyến trên ạ. 😊"
-            )
-            intent = "BUSINESS_QUESTION_CONFIRM_CANCEL"
-
-        else:
-            # ✏️ Coi nội dung mới là câu hỏi cần gửi, đọc lại cho anh confirm
-            PENDING_UPLINE[chat_key]["question"] = user_raw
-            reply_text_core = (
-                "Em hiểu là anh/chị muốn gửi câu hỏi sau lên tuyến trên:\n"
-                f"\"{user_raw}\"\n\n"
-                "Anh/chị kiểm tra giúp em đã đúng ý chưa ạ?\n"
-                "• Nếu ĐÚNG, anh/chị trả lời: Đồng ý gửi hoặc OK gửi.\n"
-                "• Nếu CẦN SỬA, anh/chị gõ lại nội dung mới, em sẽ cập nhật trước khi gửi."
-            )
-            intent = "BUSINESS_QUESTION_CONFIRM_EDIT"
-
-        # Log + mềm hoá câu trả lời + gửi đi
-        log_payload = {
-            "source": "telegram",
-            "chat_id": str(chat_id),
-            "username": username or "",
-            "user_text": text,
-            "intent": intent,
-            "health_issue": "",
-            "product_query": "",
-            "ask_upline": "pending" if chat_key in PENDING_UPLINE else "sent_or_cancelled",
-            "final_answer_preview": reply_text_core[:500],
-        }
-        log_to_sheet(log_payload)
+        reply_text_core = (
+            "Dạ, em đã ghi nhận nội dung anh/chị muốn gửi tuyến trên là:\n"
+            f"\"{main_question}\"\n\n"
+            "Anh/chị xem giúp em đã đúng ý chưa. Nếu <b>đồng ý gửi</b>, anh/chị chỉ cần trả lời: <b>\"đồng ý\"</b> "
+            "hoặc <b>\"ok\"</b>. Nếu muốn chỉnh sửa, anh/chị gõ lại nội dung mới nhé."
+        )
 
         final_reply = build_ai_style_reply(text, reply_text_core)
         send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
 
-        LAST_USER_TEXT[chat_key] = text
-        return  # 🚩 không xử lý các intent khác nữa
+        # không cập nhật LAST_USER_TEXT ở bước confirm
+        return
 
-    # =========================================================
-    # 2️⃣ Không ở trạng thái pending → phân loại intent bình thường
-    # =========================================================
+    # ===== 2. Nếu đang ở bước CHỜ XÁC NHẬN gửi tuyến trên =====
+    if state == "waiting_confirm":
+        t_norm = normalize_text(text)
+        if any(k in t_norm for k in ["dong y", "đồng ý", "ok", "oke", "chuẩn", "chuan roi"]):
+            main_question = PENDING_UPLINE_TEXT.get(chat_key, "").strip()
+            reply_text_core = escalate_to_upline(chat_id, username, main_question)
+            ask_upline = True
+
+            # reset state
+            PENDING_UPLINE_STATE.pop(chat_key, None)
+            PENDING_UPLINE_TEXT.pop(chat_key, None)
+        else:
+            # coi đây là nội dung mới, cập nhật lại rồi yêu cầu xác nhận tiếp
+            main_question = text.strip()
+            PENDING_UPLINE_TEXT[chat_key] = main_question
+            PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+            reply_text_core = (
+                "Em đã cập nhật nội dung cần gửi tuyến trên là:\n"
+                f"\"{main_question}\"\n\n"
+                "Nếu anh/chị <b>đồng ý</b>, hãy trả lời: <b>\"đồng ý\"</b> hoặc <b>\"ok\"</b> để em gửi đi nhé."
+            )
+
+        final_reply = build_ai_style_reply(text, reply_text_core)
+        send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+        return
+
+    # ===== 3. Không ở flow tuyến trên: xử lý bình thường =====
+    previous_text = LAST_USER_TEXT.get(chat_key)
+
     intent_info = classify_intent_with_openai(text)
     intent = intent_info.get("intent", "SMALL_TALK")
     health_issue = intent_info.get("health_issue")
@@ -910,7 +804,6 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
     needs = intent_info.get("needs") or []
     ask_upline = bool(intent_info.get("ask_upline", False))
 
-    # Log sơ bộ
     log_payload = {
         "source": "telegram",
         "chat_id": str(chat_id),
@@ -921,15 +814,11 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
         "product_query": product_query or "",
     }
 
-    reply_text_core = ""
-
-    # ====== PHÂN NHÁNH THEO INTENT ======
-    if intent in ["HEALTH_COMBO"]:
+    if intent == "HEALTH_COMBO":
         combo = search_combo_by_health_issue(health_issue or text)
         reply_text_core = format_combo_reply(combo, needs, health_issue or text)
 
-    elif intent in ["HEALTH_PRODUCT"]:
-        # Nếu truy vấn sản phẩm cụ thể
+    elif intent == "HEALTH_PRODUCT":
         if product_query:
             product = search_product_by_name_or_code(product_query)
             reply_text_core = format_product_reply(product, needs, health_issue=None)
@@ -940,7 +829,6 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
             elif len(products) == 1:
                 reply_text_core = format_product_reply(products[0], needs, health_issue or text)
             else:
-                # Nhiều sản phẩm, liệt kê gợi ý
                 lines = [f"<b>Một số sản phẩm phù hợp với vấn đề {health_issue or text}:</b>"]
                 for p in products:
                     name = strip_markdown(p.get("name", "Sản phẩm"))
@@ -956,7 +844,7 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
                 lines.append("Nếu anh/chị muốn xem chi tiết sản phẩm nào, hãy hỏi theo tên hoặc mã sản phẩm cụ thể nhé.")
                 reply_text_core = "\n".join(lines)
 
-    elif intent in ["PRODUCT_DETAIL"]:
+    elif intent == "PRODUCT_DETAIL":
         product = search_product_by_name_or_code(product_query or text)
         reply_text_core = format_product_reply(product, needs, health_issue=None)
 
@@ -970,25 +858,26 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
         reply_text_core = format_navigation_reply()
 
     elif intent == "BUSINESS_QUESTION":
-        # Thử trả lời từ FAQ nội bộ trước
+        # thử FAQ trước
         faq_answer = match_business_faq(text)
         if faq_answer:
             reply_text_core = faq_answer
-        else:
-            # KHÔNG gửi lên ngay, chỉ bật trạng thái PENDING_UPLINE
-            PENDING_UPLINE[chat_key] = {"question": text}
-            ask_upline = True
+        elif ask_upline:
+            # bắt đầu flow tuyến trên: CHƯA gửi gì cả
+            PENDING_UPLINE_STATE[chat_key] = "waiting_content"
+            PENDING_UPLINE_TEXT.pop(chat_key, None)
             reply_text_core = (
-                "Vấn đề này thuộc nhóm chính sách/kinh doanh hoặc tình huống khó.\n\n"
-                "Em dự định gửi nội dung sau lên tuyến trên giúp anh/chị:\n"
-                f"\"{text}\"\n\n"
-                "Anh/chị xem giúp em đã đúng ý chưa ạ?\n"
-                "• Nếu ĐÚNG, anh/chị trả lời: Đồng ý gửi, OK gửi hoặc Gửi đi.\n"
-                "• Nếu CẦN SỬA, anh/chị nhắn lại nội dung mới, em sẽ cập nhật trước khi gửi."
+                "Dạ, em sẽ kết nối tuyến trên để hỗ trợ anh/chị.\n\n"
+                "Anh/chị cho em biết <b>cụ thể nội dung</b> muốn hỏi tuyến trên (tình huống, sản phẩm/combo, chính sách...) "
+                "để em gửi đúng ý anh/chị nhất nhé."
+            )
+        else:
+            reply_text_core = (
+                "Vấn đề này thuộc nhóm chính sách/kinh doanh hoặc tình huống khó. "
+                "Nếu anh/chị muốn, em có thể kết nối tuyến trên để được hỗ trợ trực tiếp ạ."
             )
 
     else:
-        # SMALL_TALK hoặc không rõ
         reply_text_core = (
             "Em là trợ lý AI nội bộ hỗ trợ anh/chị TVV trong việc tư vấn sản phẩm, combo và cách chăm sóc sức khoẻ.\n\n"
             "Anh/chị có thể hỏi em về:\n"
@@ -998,29 +887,24 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
             "• Những thắc mắc về kinh doanh, chính sách (em sẽ hỗ trợ chuyển tuyến trên nếu cần) 😊"
         )
 
-    # ====== LOG THÊM THÔNG TIN ======
     log_payload["ask_upline"] = "yes" if ask_upline else "no"
     log_payload["final_answer_preview"] = reply_text_core[:500]
     log_to_sheet(log_payload)
 
-    # ====== NHỜ AI “MỀM HÓA” CÂU TRẢ LỜI ======
     final_reply = build_ai_style_reply(text, reply_text_core)
-
     send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
 
-    # Cập nhật câu hỏi gần nhất của TVV
+    # cập nhật câu hỏi gần nhất (dùng cho phân tích sau này)
     LAST_USER_TEXT[chat_key] = text
 
-# ============== ROUTES FLASK ==============
+   # ============== ROUTES FLASK ==============
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({"status": "ok", "message": "Welllab AI Assistant is running."})
 
-
 @app.route("/webhook", methods=["POST"])
 def telegram_webhook():
     update = request.get_json(force=True, silent=True) or {}
-
     message = update.get("message") or update.get("edited_message")
     if not message:
         return jsonify({"ok": True})
@@ -1031,14 +915,13 @@ def telegram_webhook():
     username = from_user.get("username") or from_user.get("first_name")
     text = message.get("text", "") or ""
 
-    # Nếu là tin từ tuyến trên (upline)
+    # Tin nhắn từ tuyến trên
     if UPLINE_CHAT_ID and str(chat_id) == str(UPLINE_CHAT_ID):
         if text.startswith("/reply"):
             target_chat_id, content = handle_upline_reply(text)
             if not target_chat_id:
                 send_telegram_message(chat_id, content)
             else:
-                # Gửi nội dung cho TVV
                 send_telegram_message(target_chat_id, f"📣 Phản hồi từ tuyến trên:\n\n{content}")
                 send_telegram_message(chat_id, "Đã gửi trả lời cho TVV.")
         else:
@@ -1048,7 +931,7 @@ def telegram_webhook():
             )
         return jsonify({"ok": True})
 
-    # Xử lý lệnh /start
+    # /start
     if text.startswith("/start"):
         welcome = (
             "Chào anh/chị, em là <b>Trợ lý AI Welllab</b> hỗ trợ đội ngũ TVV 💚\n\n"
@@ -1062,12 +945,11 @@ def telegram_webhook():
         send_telegram_message(chat_id, welcome, reply_to_message_id=message.get("message_id"))
         return jsonify({"ok": True})
 
-    # Các tin nhắn còn lại
     handle_user_message(chat_id, text, username=username, msg_id=message.get("message_id"))
-
     return jsonify({"ok": True})
 
 # ============== MAIN ==============
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
