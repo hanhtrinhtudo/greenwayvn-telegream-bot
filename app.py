@@ -724,14 +724,14 @@ Dưới đây là nội dung cốt lõi cần truyền đạt, bạn được ph
 
 def handle_user_message(chat_id, text, username=None, msg_id=None):
     
-     global LAST_USER_TEXT, PENDING_UPLINE_STATE, PENDING_UPLINE_TEXT
+    global LAST_USER_TEXT, PENDING_UPLINE_STATE, PENDING_UPLINE_TEXT
 
     chat_key = str(chat_id)
     state = PENDING_UPLINE_STATE.get(chat_key, "")
     reply_text_core = ""
     ask_upline = False
 
-   # ===== 1. Nếu đang ở bước CHỜ NỘI DUNG gửi tuyến trên =====
+    # ===== 1. Nếu đang ở bước CHỜ NỘI DUNG gửi tuyến trên =====
     if state == "waiting_content":
         main_question = text.strip()
         PENDING_UPLINE_TEXT[chat_key] = main_question
@@ -950,5 +950,3 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
-
-
