@@ -548,7 +548,9 @@ def format_combo_reply(combo, needs, health_issue):
 
     lines = []
     lines.append(f"🎯 <b>{name}</b>")
-    if header_text:
+
+    # Nếu header_text trùng nội dung với name thì bỏ, để tránh lặp
+    if header_text and normalize_text(header_text) != normalize_text(name):
         lines.append(f"📌 {header_text}")
 
     if products:
@@ -936,7 +938,9 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
 
     if is_meta_history and state not in ["waiting_content", "waiting_confirm"]:
         # 1) Lấy lịch sử gần nhất
-        history = fetch_history(chat_key, limit=10) or []
+        history_items = fetch_history(chat_key, limit=20) or []
+        # Sắp xếp lại: tin cũ -> tin mới
+        history_items = list(reversed(history_items))
 
         # 2) Loại bỏ chính câu vừa hỏi
         filtered = []
@@ -1341,5 +1345,6 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
 
 
