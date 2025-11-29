@@ -142,13 +142,89 @@ def send_telegram_message(chat_id, text, reply_to_message_id=None, parse_mode="H
     except Exception as e:
         print("[ERROR] Gửi tin nhắn Telegram lỗi:", e)
 
-def log_to_sheet(payload: dict):
+# ============== LOG VÀO GOOGLE SHEET ==============
+def log_event(
+    log_type,
+    chat_id,
+    username="",
+    role="",
+    user_text="",
+    bot_reply="",
+    intent="",
+    health_issue="",
+    product_query="",
+    ask_upline="",
+    extra="",
+    raw_payload=None,
+):
+    """
+    Gửi 1 dòng log sang Apps Script (sheet "Welllab Bot Logs").
+    Apps Script sẽ tự tạo header, nên mình chỉ cần gửi key-value.
+    """
     if not LOG_SHEET_WEBHOOK_URL:
         return
     try:
-        requests.post(LOG_SHEET_WEBHOOK_URL, json=payload, timeout=15)
+        payload = {
+            "log_type": log_type,
+            "source": "telegram",
+            "chat_id": str(chat_id),
+            "username": username or "",
+            "role": role or "",
+            "user_text": user_text or "",
+            "bot_reply": bot_reply or "",
+            "intent": intent or "",
+            "health_issue": health_issue or "",
+            "product_query": product_query or "",
+            "ask_upline": ask_upline or "",
+            "extra": extra or "",
+        }
+        if raw_payload is not None:
+            payload["raw_payload"] = raw_payload
+        requests.post(LOG_SHEET_WEBHOOK_URL, json=payload, timeout=10)
     except Exception as e:
-        print("[WARN] Log sheet lỗi:", e)
+        print("[WARN] log_event lỗi:", e)
+
+def fetch_last_upline_question(chat_id: str):
+    """
+    Hỏi Apps Script xem câu hỏi tuyến trên gần nhất của chat_id là gì.
+    (Apps Script xử lý action=getLastUplineQuestion)
+    """
+    if not LOG_SHEET_WEBHOOK_URL:
+        return None
+    try:
+        url = f"{LOG_SHEET_WEBHOOK_URL}?action=getLastUplineQuestion&chat_id={chat_id}"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            print("[WARN] fetch_last_upline_question HTTP:", resp.text)
+            return None
+        data = resp.json()
+        if not data.get("ok"):
+            return None
+        q = (data.get("question") or "").strip()
+        return q or None
+    except Exception as e:
+        print("[WARN] fetch_last_upline_question lỗi:", e)
+        return None
+
+def fetch_history(chat_id: str, limit: int = 20):
+    """
+    (Chuẩn bị cho tương lai) Lấy lịch sử hội thoại gần nhất từ Apps Script.
+    """
+    if not LOG_SHEET_WEBHOOK_URL:
+        return []
+    try:
+        url = f"{LOG_SHEET_WEBHOOK_URL}?action=getHistory&chat_id={chat_id}&limit={limit}"
+        resp = requests.get(url, timeout=10)
+        if resp.status_code != 200:
+            print("[WARN] fetch_history HTTP:", resp.text)
+            return []
+        data = resp.json()
+        if not data.get("ok"):
+            return []
+        return data.get("items") or []
+    except Exception as e:
+        print("[WARN] fetch_history lỗi:", e)
+        return []
 
 # ============== ĐỒNG BỘ SYNONYMS & HEALTH TAGS ==============
 def apply_synonyms(text: str) -> str:
@@ -630,6 +706,17 @@ def escalate_to_upline(chat_id, username, main_question, extra_note=None):
             "Anh/chị vui lòng liên hệ trực tiếp lãnh đạo để được hỗ trợ."
         )
 
+    # Log riêng câu hỏi chính gửi tuyến trên
+    log_event(
+        log_type="UPLINE_QUESTION",
+        chat_id=str(chat_id),
+        username=username or "",
+        role="user",
+        user_text=main_question or "",
+        ask_upline="yes",
+        extra=extra_note or "",
+    )
+
     msg_lines = [
         "📨 <b>YÊU CẦU HỖ TRỢ TUYẾN TRÊN</b>",
         "",
@@ -721,6 +808,7 @@ Dưới đây là nội dung cốt lõi cần truyền đạt, bạn được ph
         print("[ERROR] OpenAI build_ai_style_reply:", e)
         return core_answer
 
+# ============== XỬ LÝ TIN NHẮN CHÍNH ==============
 
 def handle_user_message(chat_id, text, username=None, msg_id=None):
     
@@ -728,84 +816,193 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
 
     chat_key = str(chat_id)
     state = PENDING_UPLINE_STATE.get(chat_key, "")
-    reply_text_core = ""
-    ask_upline = False
 
-    # ===== 1. Nếu đang ở bước CHỜ NỘI DUNG gửi tuyến trên =====
-    if state == "waiting_content":
-        main_question = text.strip()
-        PENDING_UPLINE_TEXT[chat_key] = main_question
-        PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+    # Log tin nhắn người dùng
+    log_event(
+        log_type="USER_MESSAGE",
+        chat_id=chat_id,
+        username=username or "",
+        role="user",
+        user_text=text,
+    )
 
-        reply_text_core = (
-            "Dạ, em đã ghi nhận nội dung anh/chị muốn gửi tuyến trên là:\n"
-            f"\"{main_question}\"\n\n"
-            "Anh/chị xem giúp em đã đúng ý chưa. Nếu <b>đồng ý gửi</b>, anh/chị chỉ cần trả lời: <b>\"đồng ý\"</b> "
-            "hoặc <b>\"ok\"</b>. Nếu muốn chỉnh sửa, anh/chị gõ lại nội dung mới nhé."
-        )
+    # ===== Câu hỏi: "Lần trước em chuyển câu hỏi gì cho tuyến trên?" =====
+    t_norm = normalize_text(text)
+    if ("lan truoc" in t_norm or "lần trước" in t_norm) and \
+       ("chuyen cau hoi" in t_norm or "chuyen cau" in t_norm or "gui cau hoi" in t_norm or "gửi câu hỏi" in t_norm) and \
+       ("tuyen tren" in t_norm or "tuyến trên" in t_norm):
 
-        final_reply = build_ai_style_reply(text, reply_text_core)
-        send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
-
-        # không cập nhật LAST_USER_TEXT ở bước confirm
-        return
-
-    # ===== 2. Nếu đang ở bước CHỜ XÁC NHẬN gửi tuyến trên =====
-    if state == "waiting_confirm":
-        t_norm = normalize_text(text)
-        if any(k in t_norm for k in ["dong y", "đồng ý", "ok", "oke", "chuẩn", "chuan roi"]):
-            main_question = (PENDING_UPLINE_TEXT.get(chat_key) or "").strip()
-            reply_text_core = escalate_to_upline(chat_id, username, main_question)
-            ask_upline = True
-
-            PENDING_UPLINE_STATE.pop(chat_key, None)
-            PENDING_UPLINE_TEXT.pop(chat_key, None)
-        else:
-            main_question = text.strip()
-            PENDING_UPLINE_TEXT[chat_key] = main_question
-            PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+        last_q = fetch_last_upline_question(chat_key)
+        if last_q:
             reply_text_core = (
-                "Em đã cập nhật nội dung cần gửi tuyến trên là:\n"
-                f"\"{main_question}\"\n\n"
-                "Nếu anh/chị <b>đồng ý</b>, hãy trả lời: <b>\"đồng ý\"</b> hoặc <b>\"ok\"</b> để em gửi đi nhé."
+                "Lần trước em đã gửi câu hỏi lên tuyến trên với nội dung:\n"
+                f"\"{last_q}\"\n\n"
+                "Nếu anh/chị muốn bổ sung hoặc chỉnh lại, mình có thể gửi thêm câu hỏi mới vào đây, "
+                "em sẽ hỗ trợ tiếp ạ."
+            )
+        else:
+            reply_text_core = (
+                "Hiện tại em không tìm thấy nội dung nào đã gửi tuyến trên trước đó cho anh/chị "
+                "(có thể hệ thống vừa được khởi động lại hoặc chưa có log).\n\n"
+                "Anh/chị cho em nội dung cần hỏi, em sẽ gửi lên tuyến trên giúp mình nhé."
             )
 
         final_reply = build_ai_style_reply(text, reply_text_core)
         send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
 
-        log_payload = {
-            "source": "telegram",
-            "chat_id": str(chat_id),
-            "username": username or "",
-            "user_text": text,
-            "intent": "BUSINESS_QUESTION_UPLINE_FLOW",
-            "health_issue": "",
-            "product_query": "",
-            "ask_upline": "yes" if ask_upline else "no",
-            "final_answer_preview": reply_text_core[:500],
-        }
-        log_to_sheet(log_payload)
+        log_event(
+            log_type="BOT_REPLY",
+            chat_id=chat_id,
+            username=username or "",
+            role="bot",
+            bot_reply=final_reply,
+            intent="ASK_PREVIOUS_UPLINE_QUESTION",
+        )
 
         LAST_USER_TEXT[chat_key] = text
         return
+           
 
-    # ===== 3. Bình thường: phân tích intent =====
+    reply_text_core = ""
+    ask_upline = False
+
+    # ===== Đang ở trạng thái chờ TVV nhập nội dung để gửi tuyến trên =====
+    if state == "waiting_content":
+        main_question = text.strip()
+        if not main_question:
+            reply_text_core = (
+                "Em chưa thấy anh/chị nhập nội dung câu hỏi. "
+                "Anh/chị gõ rõ giúp em nội dung muốn gửi tuyến trên nhé."
+            )
+            final_reply = build_ai_style_reply(text, reply_text_core)
+            send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
+            log_event(
+                log_type="BOT_REPLY",
+                chat_id=chat_id,
+                username=username or "",
+                role="bot",
+                bot_reply=final_reply,
+                intent="BUSINESS_QUESTION",
+                ask_upline="pending",
+            )
+            LAST_USER_TEXT[chat_key] = text
+            return
+
+        # Lưu câu hỏi, chuyển sang bước xác nhận
+        PENDING_UPLINE_TEXT[chat_key] = {"main_question": main_question}
+        PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+
+        reply_text_core = (
+            "Em ghi lại nội dung câu hỏi để gửi tuyến trên như sau:\n"
+            f"\"{main_question}\"\n\n"
+            "Anh/chị xem giúp em đã đúng ý chưa ạ?\n"
+            "• Nếu ĐÚNG, anh/chị trả lời: <b>Đồng ý gửi</b>, <b>OK gửi</b> hoặc <b>Gửi đi</b>.\n"
+            "• Nếu CẦN SỬA, anh/chị nhắn lại nội dung mới, em sẽ cập nhật trước khi gửi."
+        )
+
+        final_reply = build_ai_style_reply(text, reply_text_core)
+        send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
+        log_event(
+            log_type="BOT_REPLY",
+            chat_id=chat_id,
+            username=username or "",
+            role="bot",
+            bot_reply=final_reply,
+            intent="BUSINESS_QUESTION",
+            ask_upline="waiting_confirm",
+        )
+        LAST_USER_TEXT[chat_key] = text
+        return
+
+    # ===== Đang ở trạng thái chờ xác nhận gửi tuyến trên =====
+    if state == "waiting_confirm":
+        confirm_norm = normalize_text(text)
+        main_question = (PENDING_UPLINE_TEXT.get(chat_key) or {}).get("main_question", "")
+
+        confirmed = any(
+            kw in confirm_norm
+            for kw in [
+                "dong y gui",
+                "đồng ý gửi",
+                "ok gui",
+                "ok gửi",
+                "gui di",
+                "gửi đi",
+                "gui len tuyen tren",
+                "gửi lên tuyến trên",
+            ]
+        )
+
+        if confirmed and main_question:
+            # Gửi tuyến trên thật sự
+            reply_text_core = escalate_to_upline(
+                chat_id=chat_id,
+                username=username,
+                main_question=main_question,
+                extra_note=None,
+            )
+
+            # Xoá trạng thái chờ
+            PENDING_UPLINE_STATE.pop(chat_key, None)
+            PENDING_UPLINE_TEXT.pop(chat_key, None)
+
+            final_reply = build_ai_style_reply(text, reply_text_core)
+            send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
+            log_event(
+                log_type="BOT_REPLY",
+                chat_id=chat_id,
+                username=username or "",
+                role="bot",
+                bot_reply=final_reply,
+                intent="BUSINESS_QUESTION",
+                ask_upline="yes",
+            )
+            LAST_USER_TEXT[chat_key] = text
+            return
+        else:
+            # Xem tin nhắn này như nội dung mới cần gửi
+            main_question = text.strip()
+            PENDING_UPLINE_TEXT[chat_key] = {"main_question": main_question}
+            PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+
+            reply_text_core = (
+                "Em hiểu là anh/chị muốn chỉnh lại nội dung câu hỏi. "
+                "Hiện tại em sẽ chuẩn bị gửi với nội dung:\n"
+                f"\"{main_question}\"\n\n"
+                "Anh/chị kiểm tra giúp em, nếu ĐÚNG thì trả lời: <b>Đồng ý gửi</b> hoặc <b>OK gửi</b>. "
+                "Nếu vẫn chưa đúng, anh/chị gõ lại nội dung mới nhé."
+            )
+
+            final_reply = build_ai_style_reply(text, reply_text_core)
+            send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
+            log_event(
+                log_type="BOT_REPLY",
+                chat_id=chat_id,
+                username=username or "",
+                role="bot",
+                bot_reply=final_reply,
+                intent="BUSINESS_QUESTION",
+                ask_upline="waiting_confirm",
+            )
+            LAST_USER_TEXT[chat_key] = text
+            return
+
+    # ===== Trường hợp bình thường: phân tích intent & trả lời =====
+    # (THÊM DÒNG NÀY) Lấy câu hỏi trước đó của user, dùng cho flow BUSINESS_QUESTION
+    previous_text = LAST_USER_TEXT.get(chat_key, "")
+
     intent_info = classify_intent_with_openai(text)
     intent = intent_info.get("intent", "SMALL_TALK")
     health_issue = intent_info.get("health_issue")
     product_query = intent_info.get("product_query")
     needs = intent_info.get("needs") or []
-    ask_upline = bool(intent_info.get("ask_upline", False))
+    ask_upline_flag = bool(intent_info.get("ask_upline", False))
 
-    log_payload = {
-        "source": "telegram",
-        "chat_id": str(chat_id),
-        "username": username or "",
-        "user_text": text,
-        "intent": intent,
-        "health_issue": health_issue or "",
-        "product_query": product_query or "",
-    }
+    reply_text_core = ""
 
     if intent == "HEALTH_COMBO":
         combo = search_combo_by_health_issue(health_issue or text)
@@ -834,9 +1031,7 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
                         line += f"\n   🔗 {url}"
                     lines.append(line)
                 lines.append("")
-                lines.append(
-                    "Nếu anh/chị muốn xem chi tiết sản phẩm nào, hãy hỏi theo tên hoặc mã sản phẩm cụ thể nhé."
-                )
+                lines.append("Nếu anh/chị muốn xem chi tiết sản phẩm nào, hãy hỏi theo tên hoặc mã sản phẩm cụ thể nhé.")
                 reply_text_core = "\n".join(lines)
 
     elif intent == "PRODUCT_DETAIL":
@@ -856,36 +1051,55 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
         faq_answer = match_business_faq(text)
         if faq_answer:
             reply_text_core = faq_answer
-        elif ask_upline:
-            PENDING_UPLINE_STATE[chat_key] = "waiting_content"
-            PENDING_UPLINE_TEXT.pop(chat_key, None)
-            reply_text_core = (
-                "Dạ, em sẽ kết nối tuyến trên để hỗ trợ anh/chị.\n\n"
-                "Anh/chị cho em biết <b>cụ thể nội dung</b> muốn hỏi tuyến trên (tình huống, sản phẩm/combo, chính sách...) "
-                "để em gửi đúng ý anh/chị nhất nhé."
-            )
         else:
-            reply_text_core = (
-                "Vấn đề này thuộc nhóm chính sách/kinh doanh hoặc tình huống khó. "
-                "Nếu anh/chị muốn, em có thể kết nối tuyến trên để được hỗ trợ trực tiếp ạ."
-            )
+            # Chuẩn bị quy trình chuyển tuyến trên có xác nhận
+            ask_upline_flag = True
+            main_question = previous_text or ""
+            if main_question:
+                # Đã có câu hỏi chính ngay trước đó, hỏi xác nhận
+                PENDING_UPLINE_TEXT[chat_key] = {"main_question": main_question}
+                PENDING_UPLINE_STATE[chat_key] = "waiting_confirm"
+                reply_text_core = (
+                    "Vấn đề này thuộc nhóm chính sách/kinh doanh hoặc tình huống khó.\n\n"
+                    "Em dự định gửi nội dung sau lên tuyến trên giúp anh/chị:\n"
+                    f"\"{main_question}\"\n\n"
+                    "Anh/chị xem giúp em đã đúng ý chưa ạ?\n"
+                    "• Nếu ĐÚNG, anh/chị trả lời: <b>Đồng ý gửi</b>, <b>OK gửi</b> hoặc <b>Gửi đi</b>.\n"
+                    "• Nếu CẦN SỬA, anh/chị nhắn lại nội dung mới, em sẽ cập nhật trước khi gửi."
+                )
+            else:
+                # Chưa có câu hỏi rõ ràng, hỏi TVV nhập nội dung
+                PENDING_UPLINE_STATE[chat_key] = "waiting_content"
+                reply_text_core = (
+                    "Vấn đề này thuộc nhóm chính sách/kinh doanh hoặc tình huống khó.\n\n"
+                    "Anh/chị cho em nội dung câu hỏi muốn gửi tuyến trên (càng cụ thể càng tốt), "
+                    "em sẽ nhắc lại để anh/chị xác nhận trước khi gửi đi ạ."
+                )
 
     else:
         reply_text_core = (
             "Em là trợ lý AI nội bộ hỗ trợ anh/chị TVV trong việc tư vấn sản phẩm, combo và cách chăm sóc sức khoẻ.\n\n"
             "Anh/chị có thể hỏi em về:\n"
-            "• Combo cho một vấn đề sức khỏe (tiểu đường, dạ dày, xương khớp...)\n"
+            "• Combo cho một vấn đề sức khỏe (ví dụ: tiểu đường, dạ dày, xương khớp...)\n"
             "• Thông tin chi tiết một sản phẩm (thành phần, lợi ích, cách dùng...)\n"
-            "• Cách mua hàng, thanh toán, các kênh chính thức của công ty\n"
+            "• Cách mua hàng, thanh toán, kênh chính thức của công ty\n"
             "• Những thắc mắc về kinh doanh, chính sách (em sẽ hỗ trợ chuyển tuyến trên nếu cần) 😊"
         )
 
-    log_payload["ask_upline"] = "yes" if ask_upline else "no"
-    log_payload["final_answer_preview"] = reply_text_core[:500]
-    log_to_sheet(log_payload)
-
     final_reply = build_ai_style_reply(text, reply_text_core)
     send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
+
+    log_event(
+        log_type="BOT_REPLY",
+        chat_id=chat_id,
+        username=username or "",
+        role="bot",
+        bot_reply=final_reply,
+        intent=intent,
+        health_issue=health_issue or "",
+        product_query=product_query or "",
+        ask_upline="yes" if ask_upline_flag else "no",
+    )
 
     LAST_USER_TEXT[chat_key] = text
 
@@ -893,7 +1107,6 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
 @app.route("/", methods=["GET"])
 def index():
     return jsonify({"status": "ok", "message": "Welllab AI Assistant is running."})
-
 
 @app.route("/webhook", methods=["POST"])
 def telegram_webhook():
@@ -909,18 +1122,25 @@ def telegram_webhook():
     username = from_user.get("username") or from_user.get("first_name")
     text = message.get("text", "") or ""
 
-    if not chat_id:
-        return jsonify({"ok": True})
-
-    # Tin từ tuyến trên
+    # Tin nhắn từ tuyến trên
     if UPLINE_CHAT_ID and str(chat_id) == str(UPLINE_CHAT_ID):
         if text.startswith("/reply"):
             target_chat_id, content = handle_upline_reply(text)
             if not target_chat_id:
                 send_telegram_message(chat_id, content)
             else:
+                # Gửi nội dung cho TVV
                 send_telegram_message(target_chat_id, f"📣 Phản hồi từ tuyến trên:\n\n{content}")
                 send_telegram_message(chat_id, "Đã gửi trả lời cho TVV.")
+
+                # Log lại phản hồi tuyến trên
+                log_event(
+                    log_type="UPLINE_REPLY",
+                    chat_id=target_chat_id,
+                    username=username or "",
+                    role="upline",
+                    bot_reply=content,
+                )
         else:
             send_telegram_message(
                 chat_id,
@@ -936,15 +1156,25 @@ def telegram_webhook():
             "• Combo cho các vấn đề sức khỏe (tiểu đường, dạ dày, mỡ máu, xương khớp...)\n"
             "• Thông tin chi tiết sản phẩm (thành phần, lợi ích, cách dùng...)\n"
             "• Cách mua hàng, thanh toán, kênh chính thức của công ty\n"
-            "• Câu hỏi kinh doanh, chính sách (em sẽ hỗ trợ kết nối tuyến trên nếu cần)\n\n"
+            "• Câu hỏi kinh doanh, chính sách (em sẽ hỗ trợ chuyển tuyến trên nếu cần)\n\n"
             "Anh/chị cứ nhắn tự nhiên như đang hỏi một leader nhé 🥰"
         )
         send_telegram_message(chat_id, welcome, reply_to_message_id=message.get("message_id"))
+
+        log_event(
+            log_type="BOT_REPLY",
+            chat_id=chat_id,
+            username=username or "",
+            role="bot",
+            bot_reply=welcome,
+            intent="START",
+        )
         return jsonify({"ok": True})
 
+    # Các tin nhắn còn lại
     handle_user_message(chat_id, text, username=username, msg_id=message.get("message_id"))
-    return jsonify({"ok": True})
 
+    return jsonify({"ok": True})
 
 # ============== MAIN ==============
 if __name__ == "__main__":
