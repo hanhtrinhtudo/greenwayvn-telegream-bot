@@ -925,30 +925,51 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
         user_text=text,
     )
 
+        # ===== CÂU HỎI LỊCH SỬ / META_HISTORY =====
     t_norm = normalize_text(text)
+    is_meta_history = False
 
-    # ===== 0. HỎI LỊCH SỬ CÂU HỎI ĐÃ GỬI TUYẾN TRÊN (giữ nguyên logic cũ, chỉ chuyển lên đầu) =====
-    if ("lan truoc" in t_norm or "lần trước" in t_norm) and \
-       ("chuyen cau hoi" in t_norm or "chuyển câu hỏi" in t_norm or
-        "chuyen cau" in t_norm or "chuyển câu" in t_norm or
-        "gui cau hoi" in t_norm or "gửi câu hỏi" in t_norm) and \
-       ("tuyen tren" in t_norm or "tuyến trên" in t_norm):
+    if ("lich su" in t_norm or "lịch sử" in t_norm or "vua hoi" in t_norm or 
+        "vừa hỏi" in t_norm or "hoi gi nhi" in t_norm or "hỏi gì nhỉ" in t_norm):
 
-        last_q = fetch_last_upline_question(chat_key)
-        if last_q:
-            reply_text_core = (
-                "Lần trước em đã gửi câu hỏi lên tuyến trên với nội dung:\n"
-                f"\"{last_q}\"\n\n"
-                "Nếu anh/chị muốn bổ sung hoặc chỉnh lại, mình có thể gửi thêm câu hỏi mới vào đây, "
-                "em sẽ hỗ trợ tiếp ạ."
-            )
+        is_meta_history = True
+
+    if is_meta_history and state not in ["waiting_content", "waiting_confirm"]:
+        # 1) Lấy lịch sử gần nhất
+        history = fetch_history(chat_key, limit=10) or []
+
+        # 2) Loại bỏ chính câu vừa hỏi
+        filtered = []
+        for item in history:
+            q = (item.get("user_text") or "").strip()
+            if normalize_text(q) == t_norm:
+                continue  # bỏ câu hiện tại
+            filtered.append(item)
+
+        # 3) Rút gọn tối đa 3–4 cặp
+        filtered = filtered[:4]
+
+        # 4) Format rút gọn – không in full câu dài
+        lines = ["Em tóm tắt một vài lượt trao đổi gần đây nhé:\n"]
+
+        if not filtered:
+            lines.append("• Hiện tại em chưa tìm thấy lịch sử trước đó ạ.")
         else:
-            reply_text_core = (
-                "Hiện tại em không tìm thấy nội dung nào đã gửi tuyến trên trước đó cho anh/chị "
-                "(có thể hệ thống vừa được khởi động lại hoặc chưa có log).\n\n"
-                "Anh/chị cho em nội dung cần hỏi, em sẽ gửi lên tuyến trên giúp mình nhé."
-            )
+            for item in filtered:
+                q = (item.get("user_text") or "").strip()
+                a = (item.get("bot_reply") or "").strip()
 
+                # Rút gọn phần trả lời quá dài
+                if len(a) > 200:
+                    a = a[:200].rstrip() + "…"
+
+                if q:
+                    lines.append(f"• Anh/chị hỏi: {q}")
+                if a:
+                    lines.append(f"  → Em trả lời: {a}")
+                lines.append("")
+
+        reply_text_core = "\n".join(lines).strip()
         final_reply = build_ai_style_reply(text, reply_text_core)
         send_telegram_message(chat_id, final_reply, reply_to_message_id=msg_id)
 
@@ -958,9 +979,8 @@ def handle_user_message(chat_id, text, username=None, msg_id=None):
             username=username or "",
             role="bot",
             bot_reply=final_reply,
-            intent="ASK_PREVIOUS_UPLINE_QUESTION",
+            intent="META_HISTORY",
         )
-
         LAST_USER_TEXT[chat_key] = text
         return
 
@@ -1321,4 +1341,5 @@ def telegram_webhook():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "8000"))
     app.run(host="0.0.0.0", port=port)
+
 
